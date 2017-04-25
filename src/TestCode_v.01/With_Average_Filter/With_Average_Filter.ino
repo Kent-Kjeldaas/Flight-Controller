@@ -58,6 +58,7 @@ float pid_error_temp;
 float pid_i_mem_roll, pid_roll_setpoint, gyro_roll_input, pid_output_roll, pid_last_roll_d_error;
 float pid_i_mem_pitch, pid_pitch_setpoint, gyro_pitch_input, pid_output_pitch, pid_last_pitch_d_error;
 float pid_i_mem_yaw, pid_yaw_setpoint, gyro_yaw_input, pid_output_yaw, pid_last_yaw_d_error;
+float roll_signal, pitch_signal, yaw_signal;
 
 /////////////////////////////
 // Legger inn Calibration values:
@@ -143,7 +144,7 @@ void setup() {
   gyro_axis_cal[1] /= 2000;                                    //Divide the roll total by 2000.
   gyro_axis_cal[2] /= 2000;                                    //Divide the pitch total by 2000.
   gyro_axis_cal[3] /= 2000;                                    //Divide the yaw total by 2000.
-
+  Serial.println("starting 2");
   PCICR |= (1 << PCIE0);                                       //Set PCIE0 to enable PCMSK0 scan.
   PCMSK0 |= (1 << PCINT0);                                     //Set PCINT0 (digital input 8) to trigger an interrupt on state change.
   PCMSK0 |= (1 << PCINT1);                                     //Set PCINT1 (digital input 9)to trigger an interrupt on state change.
@@ -166,7 +167,7 @@ void setup() {
     }
   }
   start = 0;                                                   //Set start back to 0.
-
+  Serial.println("starting 3");
   //Load the battery voltage to the battery_voltage variable.
   //65 is the voltage compensation for the diode.
   //12.6V equals ~5V @ Analog 0.
@@ -211,13 +212,30 @@ void loop() {
   receiver_input_channel_3 = convert_receiver_channel(3);      //Convert the actual receiver signals for throttle to the standard 1000 - 2000us.
   receiver_input_channel_4 = convert_receiver_channel(4);      //Convert the actual receiver signals for yaw to the standard 1000 - 2000us.
 
-  //Let's get the current gyro data and scale it to degrees per second for the pid calculations.
-  gyro_signalen();
+  //Reset values
+  roll_signal = 0;
+  pitch_signal = 0;
+  yaw_signal = 0;
 
+  //Need to take an average of three samples to reduce noise.
+  for(int i = 0; i < 3; i++){
+    gyro_signalen();
+    roll_signal += gyro_roll_input;
+    pitch_signal += gyro_pitch_input;
+    yaw_signal += gyro_yaw_input;
+  }
+
+  //Avg last three samples
+  gyro_roll_input = roll_signal/3;
+  gyro_pitch_input = pitch_signal/3;
+  gyro_yaw_input = yaw_signal/3;
+  
+  //Let's get the current gyro data and scale it to degrees per second for the pid calculations.
   gyro_roll_input = (gyro_roll_input * 0.8) + ((gyro_roll / 57.14286) * 0.2);            //Gyro pid input is deg/sec.
   gyro_pitch_input = (gyro_pitch_input * 0.8) + ((gyro_pitch / 57.14286) * 0.2);         //Gyro pid input is deg/sec.
   gyro_yaw_input = (gyro_yaw_input * 0.8) + ((gyro_yaw / 57.14286) * 0.2);               //Gyro pid input is deg/sec.
 
+  /*
   /////////////////////////////
   //NEW FILTER TEST
   /////////////////////////////
@@ -232,7 +250,7 @@ void loop() {
    for(i = 1; i <= N; i++) {            // Summing the rest of the products
     pitch_angle_lowpass += h[i] * x[i]; // Convolve rest of the inputs with the filter coefficients
    }
-
+   */
   //For starting the motors: throttle low and yaw left (step 1).
   if (receiver_input_channel_3 < 1050 && receiver_input_channel_4 < 1050)start = 1;
   //When yaw stick is back in the center position start the motors (step 2).

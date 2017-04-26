@@ -336,6 +336,8 @@ void loop() {
       Serial.print(number);
       number++;
       Serial.print(" ");
+      Serial.print(throttle);
+      Serial.print(" ");
       Serial.print(gyro_pitch_input );
       Serial.print(" ");
       Serial.print(gyro_roll_input);
@@ -367,7 +369,7 @@ void loop() {
 
   //All the information for controlling the motor's is available.
   //The refresh rate is 250Hz. That means the esc's need there pulse every 4ms.
-  while (micros() - loop_timer < looptimer);                                //We wait until 4000us are passed.
+  while (micros() - loop_timer < looptime);                                //We wait until 4000us are passed.
   loop_timer = micros();                                                    //Set the timer for the next loop.
 
   PORTD |= B11110000;                                                       //Set digital outputs 4,5,6 and 7 high.

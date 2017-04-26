@@ -332,6 +332,8 @@ void loop() {
       Serial.print(number);
       number++;
       Serial.print(" ");
+      Serial.print(throttle);
+      Serial.print(" ");
       Serial.print(gyro_pitch_input );
       Serial.print(" ");
       Serial.print(gyro_roll_input);

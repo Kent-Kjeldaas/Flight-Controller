@@ -62,10 +62,10 @@ float pid_i_mem_yaw, pid_yaw_setpoint, gyro_yaw_input, pid_output_yaw, pid_last_
 /////////////////////////////
 // Legger inn Calibration values:
 //////////////////////////////
-int s1 = 1475;
-int s2 = 1400;
-int s3 = 1525;
-int s4 = 1400;
+int s1 = 1500;
+int s2 = 2300;
+int s3 = 0;
+int s4 = 0;
 
 int s_inc = 400;
 int s1_max, s2_max, s3_max, s4_max; 
@@ -313,6 +313,8 @@ void loop() {
     if(debug) {
       Serial.print(number);
       number++;
+      Serial.print(" ");
+      Serial.print(throttle);
       Serial.print(" ");
       Serial.print(gyro_pitch_input );
       Serial.print(" ");

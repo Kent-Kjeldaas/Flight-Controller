@@ -63,10 +63,10 @@ float roll_signal, pitch_signal, yaw_signal;
 /////////////////////////////
 // Legger inn Calibration values:
 //////////////////////////////
-int s1 = 1500;
-int s2 = 1400;
-int s3 = 1500;
-int s4 = 1560;
+int s1 = 0;
+int s2 = 0;
+int s3 = 0;
+int s4 = 0;
 
 int s_inc = 400;
 int s1_max, s2_max, s3_max, s4_max; 
@@ -106,6 +106,11 @@ void setup() {
   //Read EEPROM for fast access data.
   for (start = 0; start <= 35; start++)eeprom_data[start] = EEPROM.read(start);
   gyro_address = eeprom_data[32];                              //Store the gyro address in the variable.
+
+  servo1.attach(2);
+  servo2.attach(3);
+  servo3.attach(12);
+  servo4.attach(13);
 
   Wire.begin();                                                //Start the I2C as master.
 
@@ -179,15 +184,6 @@ void setup() {
   pinMode(3, OUTPUT);
   pinMode(12, OUTPUT);
   pinMode(13, OUTPUT);
-  servo1.attach(2);
-  servo2.attach(3);
-  servo3.attach(12);
-  servo4.attach(13);
-  
-  servo1.write(s1);
-  servo2.write(s2);
-  servo3.write(s3);
-  servo4.write(s4);
   
   calibrate_servos();
   
@@ -197,10 +193,10 @@ void setup() {
   s4_max = s4 - s_inc;
   
   
-  servo1.write(s1);
-  servo2.write(s2);
-  servo3.write(s3);
-  servo4.write(s4);
+    servo1.writeMicroseconds(s1);
+    servo2.writeMicroseconds(s2);
+    servo3.writeMicroseconds(s3);
+    servo4.writeMicroseconds(s4);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Main program loop

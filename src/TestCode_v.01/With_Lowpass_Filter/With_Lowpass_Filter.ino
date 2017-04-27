@@ -63,9 +63,9 @@ float pid_i_mem_yaw, pid_yaw_setpoint, gyro_yaw_input, pid_output_yaw, pid_last_
 // Legger inn Calibration values:
 //////////////////////////////
 int s1 = 1500;
-int s2 = 2300;
-int s3 = 0;
-int s4 = 0;
+int s2 = 1500;
+int s3 = 1500;
+int s4 = 1500;
 
 int s_inc = 400;
 int s1_max, s2_max, s3_max, s4_max; 
@@ -105,6 +105,11 @@ void setup() {
   //Read EEPROM for fast access data.
   for (start = 0; start <= 35; start++)eeprom_data[start] = EEPROM.read(start);
   gyro_address = eeprom_data[32];                              //Store the gyro address in the variable.
+
+  servo1.attach(2);
+  servo2.attach(3);
+  servo3.attach(12);
+  servo4.attach(13);
 
   Wire.begin();                                                //Start the I2C as master.
 
@@ -178,10 +183,6 @@ void setup() {
   pinMode(3, OUTPUT);
   pinMode(12, OUTPUT);
   pinMode(13, OUTPUT);
-  servo1.attach(2);
-  servo2.attach(3);
-  servo3.attach(12);
-  servo4.attach(13);
   
   servo1.write(s1);
   servo2.write(s2);

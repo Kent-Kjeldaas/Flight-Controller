@@ -36,11 +36,14 @@ int esc_1, esc_2, esc_3, esc_4, servo_1, servo_2, servo_3, servo_4; //Added Serv
 int throttle, battery_voltage;
 int cal_int, start, gyro_address;
 int receiver_input[5];
+int oldest_data = 0;
+int number_of_samples = 3;
 unsigned long timer_channel_1, timer_channel_2, timer_channel_3, timer_channel_4, esc_timer, esc_loop_timer;
 unsigned long timer_1, timer_2, timer_3, timer_4, current_time;
 unsigned long loop_timer;
 double gyro_pitch, gyro_roll, gyro_yaw;
-double gyro_axis[4], gyro_axis_cal[4];
+double gyro_pitch_sum, gyro_roll_sum, gyro_yaw_sum;
+double gyro_axis[4], gyro_axis_cal[4], gyro_axis_pitch[20], gyro_axis_roll[20], gyro_axis_yaw[20];
 float pid_error_temp;
 float pid_i_mem_roll, pid_roll_setpoint, gyro_roll_input, pid_output_roll, pid_last_roll_d_error;
 float pid_i_mem_pitch, pid_pitch_setpoint, gyro_pitch_input, pid_output_pitch, pid_last_pitch_d_error;
@@ -60,6 +63,7 @@ int s1_max, s2_max, s3_max, s4_max;
 unsigned long tid, tid2;
 char data_in;
 bool cal = false;
+bool array_full = false;
 int servo_value;
  
 int number = 0;
@@ -88,7 +92,6 @@ void setup() {
   DDRA |= B11110000;
   DDRE |= B00110000;
   DDRB |= B11000000;
- 
   //pinMode(A3, OUTPUT);
   Serial.begin(57600);
   Serial.println("starting");
@@ -96,14 +99,12 @@ void setup() {
   for (start = 0; start <= 35; start++)eeprom_data[start] = EEPROM.read(start);
   gyro_address = eeprom_data[32];                              //Store the gyro address in the variable.
  
- servo1.attach(2); // portE PE4 B00010000
+  servo1.attach(2); // portE PE4 B00010000
   servo2.attach(3); // portE PE5 B00100000
   servo3.attach(12);// portE PE6 B01000000
   servo4.attach(13);// portE Pe6 B10000000
  
   Wire.begin();                                                //Start the I2C as master.
- 
- 
  
   //Use the led on the Arduino for startup indication.
   //digitalWrite(A2, HIGH);                                      //Turn on the warning led.
@@ -175,7 +176,6 @@ void setup() {
   //  pinMode(13, OUTPUT);
   //
  
- 
   servo1.writeMicroseconds(s1);
   servo2.writeMicroseconds(s2);
   servo3.writeMicroseconds(s3);
@@ -183,10 +183,10 @@ void setup() {
  
   calibrate_servos();
  
-  s1_max = s1 + s_inc;
-  s2_max = s2 - s_inc;
-  s3_max = s3 + s_inc;
-  s4_max = s4 - s_inc;
+  s1_max = s1 - s_inc;
+  s2_max = s2 + s_inc;
+  s3_max = s3 - s_inc;
+  s4_max = s4 + s_inc;
  
   servo1.writeMicroseconds(s1);
   servo2.writeMicroseconds(s2);
@@ -208,28 +208,36 @@ void loop() {
   receiver_input_channel_3 = convert_receiver_channel(3);      //Convert the actual receiver signals for throttle to the standard 1000 - 2000us.
   receiver_input_channel_4 = convert_receiver_channel(4);      //Convert the actual receiver signals for yaw to the standard 1000 - 2000us.
  
-  //Let's get the current gyro data and scale it to degrees per second for the pid calculations.
-  gyro_signalen();
- 
+  //Let's get the current gyro data
+  gyro_signalen();                                           //Read the gyro output.
+  //Get degree per second
   gyro_roll_input = (gyro_roll_input * 0.8) + ((gyro_roll / 57.14286) * 0.2);            //Gyro pid input is deg/sec.
   gyro_pitch_input = (gyro_pitch_input * 0.8) + ((gyro_pitch / 57.14286) * 0.2);         //Gyro pid input is deg/sec.
   gyro_yaw_input = (gyro_yaw_input * 0.8) + ((gyro_yaw / 57.14286) * 0.2);               //Gyro pid input is deg/sec.
-  /*
-    /////////////////////////////
-    //NEW FILTER TEST
-    /////////////////////////////
-    int i = 0;
-    for(i=N; i>0; i--) {    // Shifts all previous samples one position
-    x[i] = x[i-1];        // Makes room for one new sample
+
+  //Add to array by removing the oldest data
+  gyro_axis_pitch[oldest_data] = gyro_roll_input;
+  gyro_axis_roll[oldest_data] = gyro_pitch_input;
+  gyro_axis_yaw[oldest_data] = gyro_yaw_input;
+  
+  oldest_data++;
+  if( oldest_data > number_of_samples-1){
+    oldest_data = 0;
+    array_full = true;
+  }
+  if(array_full){
+    //get sum 
+    for(int i = 0; i < number_of_samples ; i++){
+      gyro_pitch_sum += gyro_axis_pitch[i];
+      gyro_roll_sum  += gyro_axis_roll[i];
+      gyro_yaw_sum   += gyro_axis_yaw[i];
     }
- 
-    x[0] = gyro_pitch_input;
-    pitch_angle_lowpass = h[0] * x[0];   // Compute the convolution x[0]*h[0]7
- 
-    for(i = 1; i <= N; i++) {            // Summing the rest of the products
-    pitch_angle_lowpass += h[i] * x[i]; // Convolve rest of the inputs with the filter coefficients
-    }
-  */
+    //get average
+    gyro_pitch_input /= number_of_samples;
+    gyro_roll_input /= number_of_samples;
+    gyro_yaw_input /= number_of_samples;
+  }
+  
   //For starting the motors: throttle low and yaw left (step 1).
   if (receiver_input_channel_3 < 1050 && receiver_input_channel_4 < 1050)start = 1;
   //When yaw stick is back in the center position start the motors (step 2).

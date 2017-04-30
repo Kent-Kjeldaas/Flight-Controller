@@ -63,10 +63,10 @@ float roll_signal, pitch_signal, yaw_signal;
 /////////////////////////////
 // Legger inn Calibration values:
 //////////////////////////////
-int s1 = 1500;
-int s2 = 1500;
-int s3 = 1500;
-int s4 = 1500;
+int s1 = 1475;
+int s2 = 1575;
+int s3 = 1375;
+int s4 = 1550;
 
 int s_inc = 400;
 int s1_max, s2_max, s3_max, s4_max; 
@@ -77,11 +77,11 @@ bool cal = false;
 int servo_value;
 
 int number = 0;
-bool debug = true;
+bool debug = false;
 
 //samples
-int samples = 24;
-int looptime = 4000;
+int samples = 5000;
+int looptime = 25000;
 
 void calibrate_servos();
 
@@ -234,6 +234,8 @@ void loop() {
   gyro_roll_input = roll_signal/samples;
   gyro_pitch_input = pitch_signal/samples;
   gyro_yaw_input = yaw_signal/samples;
+  Serial.print("average");
+  Serial.println(gyro_pitch_input);
   
   //Let's get the current gyro data and scale it to degrees per second for the pid calculations.
   gyro_roll_input = (gyro_roll_input * 0.8) + ((gyro_roll / 57.14286) * 0.2);            //Gyro pid input is deg/sec.

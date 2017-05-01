@@ -89,9 +89,7 @@ float pitch_angle_lowpass = 0;             // Output variable for y[n]
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void setup() {
  
-  DDRA |= B11110000;
-  DDRE |= B00110000;
-  DDRB |= B11000000;
+  DDRD |= B11110000;
   //pinMode(A3, OUTPUT);
   Serial.begin(57600);
   Serial.println("starting");
@@ -115,10 +113,10 @@ void setup() {
   set_gyro_registers();                                        //Set the specific gyro registers.
  
   for (cal_int = 0; cal_int < 1250 ; cal_int ++) {             //Wait 5 seconds before continuing.
-    PORTA |= B11110000;                                        //Set digital poort 29, 28, 27, 26 high.
+    PORTD |= B11110000;                                        //Set digital poort 29, 28, 27, 26 high.
     delayMicroseconds(1000);                                   //Wait 1000us.
-    PORTA &= B00001111;                                        //Set digital poort 29, 28, 27, 26 low.
-    //PORTA &= B00000000;                                     // Sjekk dette
+    PORTD &= B00001111;                                        //Set digital poort 29, 28, 27, 26 low.
+    //PORTD &= B00000000;                                     // Sjekk dette
     delayMicroseconds(3000);                                   //Wait 3000us.
   }
  
@@ -130,9 +128,9 @@ void setup() {
     gyro_axis_cal[2] += gyro_axis[2];                          //Ad pitch value to gyro_pitch_cal.
     gyro_axis_cal[3] += gyro_axis[3];                          //Ad yaw value to gyro_yaw_cal.
     //We don't want the esc's to be beeping annoyingly. So let's give them a 1000us puls while calibrating the gyro.
-    PORTA |= B11110000;                                        //Set digital poort 29, 28, 27, 26 high.
+    PORTD |= B11110000;                                        //Set digital poort 29, 28, 27, 26 high.
     delayMicroseconds(1000);                                   //Wait 1000us.
-    PORTA &= B00001111;                                        //Set digital poort 29, 28, 27, 26 low.
+    PORTD &= B00001111;                                        //Set digital poort 29, 28, 27, 26 low.
     delay(3);                                                  //Wait 3 milliseconds before the next loop.
   }
   //Now that we have 2000 measures, we need to devide by 2000 to get the average gyro offset.
@@ -152,9 +150,9 @@ void setup() {
     receiver_input_channel_4 = convert_receiver_channel(4);    //Convert the actual receiver signals for yaw to the standard 1000 - 2000us
     start ++;                                                  //While waiting increment start whith every loop.
     //We don't want the esc's to be beeping annoyingly. So let's give them a 1000us puls while waiting for the receiver inputs.
-    PORTA |= B11110000;                                        //Set digital poort port 29, 28, 27, 26 high.
+    PORTD |= B11110000;                                        //Set digital poort port 29, 28, 27, 26 high.
     delayMicroseconds(1000);                                   //Wait 1000us.
-    PORTA &= B00001111;                                        //Set digital poort 29, 28, 27, 26 low.
+    PORTD &= B00001111;                                        //Set digital poort 29, 28, 27, 26 low.
     delay(3);                                                  //Wait 3 milliseconds before the next loop.
     //if (start == 125) {                                        //Every 125 loops (500ms).
     //digitalWrite(A2, !digitalRead(A2));                      //Change the led status.
@@ -170,10 +168,10 @@ void setup() {
   //1260 / 1023 = 1.2317.
   //The variable battery_voltage holds 1050 if the battery voltage is 10.5V.
   // battery_voltage = (analogRead(0) + 65) * 1.2317;
-  //  pinMode(2, OUTPUT);
-  //  pinMode(3, OUTPUT);
-  //  pinMode(12, OUTPUT);
-  //  pinMode(13, OUTPUT);
+  pinMode(2, OUTPUT);
+  pinMode(3, OUTPUT);
+  pinMode(12, OUTPUT);
+  pinMode(13, OUTPUT);
   //
  
   servo1.writeMicroseconds(s1);
@@ -304,21 +302,43 @@ void loop() {
       esc_4 += esc_4 * ((1240 - battery_voltage) / (float)3500);            //Compensate the esc-4 pulse for voltage drop.
       }*/
  
-    servo_1 = map(esc_1, 1000, 2000, s1, s1_max); //Problem???????????????????????????????????????????????????????????????????????
+    if (esc_1 < 1000) esc_1 = 1000;                                         //Keep the motors running.
+    if (esc_2 < 1000) esc_2 = 1000;                                         //Keep the motors running.
+    if (esc_3 < 1000) esc_3 = 1000;                                         //Keep the motors running.
+    if (esc_4 < 1000) esc_4 = 1000;                                         //Keep the motors running.
+ 
+    if (esc_1 > 2000)esc_1 = 2000;                                          //Limit the esc-1 pulse to 2000us.
+    if (esc_2 > 2000)esc_2 = 2000;                                          //Limit the esc-2 pulse to 2000us.
+    if (esc_3 > 2000)esc_3 = 2000;                                          //Limit the esc-3 pulse to 2000us.
+    if (esc_4 > 2000)esc_4 = 2000;                                          //Limit the esc-4 pulse to 2000us.
+
+    servo_1 = map(esc_1, 1000, 2000, s1, s1_max); 
     servo_2 = map(esc_2, 1000, 2000, s2, s2_max);
     servo_3 = map(esc_3, 1000, 2000, s3, s3_max);
-    servo_4 = map(esc_4, 1000, 2000, s4, s4_max); //what is the middle value 1500 throttle? (0 deg -> +7 deg, find the values)
+    servo_4 = map(esc_4, 1000, 2000, s4, s4_max); 
+
+    esc_1 = map(esc_1, 1000, 2000, 1300, 1500);
+    esc_2 = map(esc_2, 1000, 2000, 1300, 1500);
+    esc_3 = map(esc_3, 1000, 2000, 1300, 1500);
+    esc_4 = map(esc_4, 1000, 2000, 1300, 1500);
  
-    //send servo val <--------------------------------------------------------------------------------------------------------------------<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    //send servo val 
     servo1.writeMicroseconds(servo_1);
     servo2.writeMicroseconds(servo_2);
     servo3.writeMicroseconds(servo_3);
     servo4.writeMicroseconds(servo_4);
-    if (debug) {
+
+    if (debug){
       Serial.print(number);
       number++;
       Serial.print(" ");
-      Serial.print(throttle);
+      Serial.print(esc_1);
+      Serial.print(" ");
+      Serial.print(esc_2);
+      Serial.print(" ");
+      Serial.print(esc_3);
+      Serial.print(" ");
+      Serial.print(esc_4);
       Serial.print(" ");
       Serial.print(gyro_pitch_input );
       Serial.print(" ");
@@ -326,16 +346,6 @@ void loop() {
       Serial.print(" ");
       Serial.println(gyro_yaw_input);
     }
- 
-    if (esc_1 < 1200) esc_1 = 1200;                                         //Keep the motors running.
-    if (esc_2 < 1200) esc_2 = 1200;                                         //Keep the motors running.
-    if (esc_3 < 1200) esc_3 = 1200;                                         //Keep the motors running.
-    if (esc_4 < 1200) esc_4 = 1200;                                         //Keep the motors running.
- 
-    if (esc_1 > 2000)esc_1 = 2000;                                          //Limit the esc-1 pulse to 2000us.
-    if (esc_2 > 2000)esc_2 = 2000;                                          //Limit the esc-2 pulse to 2000us.
-    if (esc_3 > 2000)esc_3 = 2000;                                          //Limit the esc-3 pulse to 2000us.
-    if (esc_4 > 2000)esc_4 = 2000;                                          //Limit the esc-4 pulse to 2000us.
   }
  
   else {
@@ -354,18 +364,18 @@ void loop() {
   while (micros() - loop_timer < 4000);//We wait until 4000us are passed.
   loop_timer = micros();                                                    //Set the timer for the next loop.
  
-  PORTA |= B11110000;                                                       //Set digital outputs 29, 28, 27, 26 high.
+  PORTD |= B11110000;                                                       //Set digital outputs 29, 28, 27, 26 high.
   timer_channel_1 = esc_1 + loop_timer;                                     //Calculate the time of the faling edge of the esc-1 pulse.
   timer_channel_2 = esc_2 + loop_timer;                                     //Calculate the time of the faling edge of the esc-2 pulse.
   timer_channel_3 = esc_3 + loop_timer;                                     //Calculate the time of the faling edge of the esc-3 pulse.
   timer_channel_4 = esc_4 + loop_timer;                                     //Calculate the time of the faling edge of the esc-4 pulse.
  
-  while (PORTA >= 16) {                                                     //Stay in this loop until output are low.
+  while (PORTD >= 16) {                                                     //Stay in this loop until output are low.
     esc_loop_timer = micros();                                              //Read the current time.
-    if (timer_channel_1 <= esc_loop_timer)PORTA &= B11101111;               //Set digital output 26 to low if the time is expired.
-    if (timer_channel_2 <= esc_loop_timer)PORTA &= B11011111;               //Set digital output 27 to low if the time is expired.
-    if (timer_channel_3 <= esc_loop_timer)PORTA &= B10111111;               //Set digital output 28 to low if the time is expired.
-    if (timer_channel_4 <= esc_loop_timer)PORTA &= B01111111;               //Set digital output 29 to low if the time is expired.
+    if (timer_channel_1 <= esc_loop_timer)PORTD &= B11101111;               //Set digital output 26 to low if the time is expired.
+    if (timer_channel_2 <= esc_loop_timer)PORTD &= B11011111;               //Set digital output 27 to low if the time is expired.
+    if (timer_channel_3 <= esc_loop_timer)PORTD &= B10111111;               //Set digital output 28 to low if the time is expired.
+    if (timer_channel_4 <= esc_loop_timer)PORTD &= B01111111;               //Set digital output 29 to low if the time is expired.
   }
 }
  

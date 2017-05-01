@@ -315,16 +315,18 @@ void loop() {
     servo4.writeMicroseconds(servo_4);
 
     if(debug) {
-      Serial.print(number);
+      Serial.print(pid_p_gain_roll);
       number++;
       Serial.print(" ");
-      Serial.print(throttle);
+      Serial.print(pid_error_temp);
       Serial.print(" ");
-      Serial.print(gyro_pitch_input );
+      Serial.print(pid_i_mem_roll);
       Serial.print(" ");
-      Serial.print(gyro_roll_input);
+      Serial.print(pid_d_gain_roll);
       Serial.print(" ");
-      Serial.println(gyro_yaw_input);
+      Serial.print(pid_error_temp);
+      Serial.print(" ");
+      Serial.println(pid_last_roll_d_error);
     }
 
     if (esc_1 < 1200) esc_1 = 1200;                                         //Keep the motors running.

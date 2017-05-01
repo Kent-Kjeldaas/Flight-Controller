@@ -79,7 +79,6 @@ void setup(){
   //Check the EEPROM signature to make sure that the setup program is executed.
   while(eeprom_data[33] != 'J' || eeprom_data[34] != 'M' || eeprom_data[35] != 'B'){
     delay(500);                                                                         //Wait for 500ms.
-    digitalWrite(12, !digitalRead(12));                                                 //Change the led status to indicate error.
   }
   wait_for_receiver();                                                                  //Wait until the receiver is active.
   zero_timer = micros();                                                                //Set the zero_timer for the first loop.
@@ -237,7 +236,6 @@ void loop(){
       //Let's take multiple gyro data samples so we can determine the average gyro offset (calibration).
       for (cal_int = 0; cal_int < 2000 ; cal_int ++){                                   //Take 2000 readings for calibration.
         if(cal_int % 125 == 0){
-          digitalWrite(12, !digitalRead(12));   //Change the led status to indicate calibration.
           Serial.print(".");
         }
         gyro_signalen();                                                                //Read the gyro output.
@@ -470,7 +468,6 @@ void set_gyro_registers(){
     Wire.requestFrom(gyro_address, 1);                           //Request 1 bytes from the gyro
     while(Wire.available() < 1);                                 //Wait until the 6 bytes are received
     if(Wire.read() != 0x08){                                     //Check if the value is 0x08
-      digitalWrite(12,HIGH);                                     //Turn on the warning led
       while(1)delay(10);                                         //Stay in this loop for ever
     }
 

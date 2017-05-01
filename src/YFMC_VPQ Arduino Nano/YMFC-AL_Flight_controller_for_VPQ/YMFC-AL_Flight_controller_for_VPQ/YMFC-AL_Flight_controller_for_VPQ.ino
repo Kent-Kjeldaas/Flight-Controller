@@ -23,7 +23,7 @@
 //PID gain and limit settings
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 float pid_p_gain_roll = 1.3;               //Gain setting for the roll P-controller
-float pid_i_gain_roll = 0.04;              //Gain setting for the roll I-controller
+float pid_i_gain_roll = 0;              //Gain setting for the roll I-controller
 float pid_d_gain_roll = 18.0;              //Gain setting for the roll D-controller
 int pid_max_roll = 400;                    //Maximum output of the PID-controller (+/-)
 
@@ -33,7 +33,7 @@ float pid_d_gain_pitch = pid_d_gain_roll;  //Gain setting for the pitch D-contro
 int pid_max_pitch = pid_max_roll;          //Maximum output of the PID-controller (+/-)
 
 float pid_p_gain_yaw = 4.0;                //Gain setting for the pitch P-controller. //4.0
-float pid_i_gain_yaw = 0.02;               //Gain setting for the pitch I-controller. //0.02
+float pid_i_gain_yaw = 0.03;               //Gain setting for the pitch I-controller. //0.02
 float pid_d_gain_yaw = 0.0;                //Gain setting for the pitch D-controller.
 int pid_max_yaw = 400;                     //Maximum output of the PID-controller (+/-)
 
@@ -53,7 +53,6 @@ int cal_int, start, gyro_address;
 int receiver_input[5];
 int oldest_data = 0;
 int number_of_samples = 3;
-int temperature;
 int acc_axis[4], gyro_axis[4];
 float roll_level_adjust, pitch_level_adjust;
 
@@ -89,7 +88,7 @@ bool array_full = false;
 int servo_value;
  
 int number = 0;
-bool debug = true;
+bool debug = false;
  
 void calibrate_servos();
  
@@ -104,10 +103,8 @@ Servo servo4;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void setup(){
   DDRD |= B11110000;
-  //pinMode(A3, OUTPUT);
-  
+
   Serial.begin(57600);
-  Serial.println("starting");
   //Copy the EEPROM data for fast access data.
   for(start = 0; start <= 35; start++)eeprom_data[start] = EEPROM.read(start);
   start = 0;                                                                //Set start back to zero.
@@ -213,7 +210,6 @@ void setup(){
 //Main program loop
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void loop(){
-
   //65.5 = 1 deg/sec (check the datasheet of the MPU-6050 for more information).
   gyro_roll_input = (gyro_roll_input * 0.7) + ((gyro_roll / 65.5) * 0.3);   //Gyro pid input is deg/sec.
   gyro_pitch_input = (gyro_pitch_input * 0.7) + ((gyro_pitch / 65.5) * 0.3);//Gyro pid input is deg/sec.
@@ -376,12 +372,12 @@ void loop(){
     servo_2 = map(esc_2, 1000, 2000, s2, s2_max);
     servo_3 = map(esc_3, 1000, 2000, s3, s3_max);
     servo_4 = map(esc_4, 1000, 2000, s4, s4_max); 
-
+    
     esc_1 = map(esc_1, 1000, 2000, 1300, 1500);
     esc_2 = map(esc_2, 1000, 2000, 1300, 1500);
     esc_3 = map(esc_3, 1000, 2000, 1300, 1500);
     esc_4 = map(esc_4, 1000, 2000, 1300, 1500);
- 
+    
     //send servo val 
     servo1.writeMicroseconds(servo_1);
     servo2.writeMicroseconds(servo_2);
@@ -389,24 +385,22 @@ void loop(){
     servo4.writeMicroseconds(servo_4);
 
     if (debug){
-      Serial.print(number);
+      Serial.print(pid_output_roll);
+      Serial.print(" = ");
+      Serial.print(pid_p_gain_roll);
       number++;
-      Serial.print(" ");
-      Serial.print(pid_pitch_setpoint);
-      Serial.print(" ");
-      Serial.print(esc_2);
-      Serial.print(" ");
-      Serial.print(pid_pitch_setpoint);
-      Serial.print(" ");
-      Serial.print(esc_4);
-      Serial.print(" ");
-      Serial.print(gyro_pitch_input );
-      Serial.print(" ");
-      Serial.print(gyro_roll_input);
-      Serial.print(" ");
-      Serial.println(gyro_yaw_input);
+      Serial.print(" * ");
+      Serial.print(pid_error_temp);
+      Serial.print(" + ");
+      Serial.print(pid_i_mem_roll);
+      Serial.print(" + ");
+      Serial.print(pid_d_gain_roll);
+      Serial.print(" * (");
+      Serial.print(pid_error_temp);
+      Serial.print(" - ");
+      Serial.println(pid_last_roll_d_error);
     }
-    
+    //pid_output_roll = pid_p_gain_roll * pid_error_temp + pid_i_mem_roll + pid_d_gain_roll * (pid_error_temp - pid_last_roll_d_error); roll/pitch pid output crazy, roll = pid_i_mem_roll
   }
 
   else{
@@ -436,6 +430,7 @@ void loop(){
   
   //All the information for controlling the motor's is available.
   //The refresh rate is 250Hz. That means the esc's need there pulse every 4ms.
+
   while(micros() - loop_timer < 4000);                                      //We wait until 4000us are passed.
   loop_timer = micros();                                                    //Set the timer for the next loop.
 
@@ -532,7 +527,6 @@ void gyro_signalen(){
     acc_axis[1] = Wire.read()<<8|Wire.read();                               //Add the low and high byte to the acc_x variable.
     acc_axis[2] = Wire.read()<<8|Wire.read();                               //Add the low and high byte to the acc_y variable.
     acc_axis[3] = Wire.read()<<8|Wire.read();                               //Add the low and high byte to the acc_z variable.
-    temperature = Wire.read()<<8|Wire.read();                               //Add the low and high byte to the temperature variable.
     gyro_axis[1] = Wire.read()<<8|Wire.read();                              //Read high and low part of the angular data.
     gyro_axis[2] = Wire.read()<<8|Wire.read();                              //Read high and low part of the angular data.
     gyro_axis[3] = Wire.read()<<8|Wire.read();                              //Read high and low part of the angular data.

@@ -36,7 +36,7 @@ float gyro_roll_cal, gyro_pitch_cal, gyro_yaw_cal;
 
 //Setup routine
 void setup(){
-  pinMode(12, OUTPUT);
+  //pinMode(12, OUTPUT);
   //Arduino (Atmega) pins default to inputs, so they don't need to be explicitly declared as inputs
   PCICR |= (1 << PCIE0);    // set PCIE0 to enable PCMSK0 scan
   PCMSK0 |= (1 << PCINT0);  // set PCINT0 (digital input 8) to trigger an interrupt on state change
@@ -370,11 +370,11 @@ void loop(){
     Serial.println(F("==================================================="));
     Serial.println(F("LED test"));
     Serial.println(F("==================================================="));
-    digitalWrite(12, HIGH);
+    //digitalWrite(12, HIGH);
     Serial.println(F("The LED should now be lit"));
     Serial.println(F("Move stick 'nose up' and back to center to continue"));
     check_to_continue();
-    digitalWrite(12, LOW);
+    //digitalWrite(12, LOW);
   }
   
   Serial.println(F(""));

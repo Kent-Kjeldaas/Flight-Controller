@@ -9,9 +9,9 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //PID gain and limit settings
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-float pid_p_gain_roll = 1.4;               //Gain setting for the roll P-controller (1.3)
-float pid_i_gain_roll = 0.05;              //Gain setting for the roll I-controller (0.05)
-float pid_d_gain_roll = 15;                //Gain setting for the roll D-controller (15)
+float pid_p_gain_roll = 1;               //Gain setting for the roll P-controller (1.3)
+float pid_i_gain_roll = 0.00;              //Gain setting for the roll I-controller (0.05)
+float pid_d_gain_roll = 4;                //Gain setting for the roll D-controller (15)
 int pid_max_roll = 400;                    //Maximum output of the PID-controller (+/-)
  
 float pid_p_gain_pitch = pid_p_gain_roll;  //Gain setting for the pitch P-controller.
@@ -19,8 +19,8 @@ float pid_i_gain_pitch = pid_i_gain_roll;  //Gain setting for the pitch I-contro
 float pid_d_gain_pitch = pid_d_gain_roll;  //Gain setting for the pitch D-controller.
 int pid_max_pitch = pid_max_roll;          //Maximum output of the PID-controller (+/-)
  
-float pid_p_gain_yaw = 4.0;                //Gain setting for the pitch P-controller. //4.0
-float pid_i_gain_yaw = 0.02;               //Gain setting for the pitch I-controller. //0.02
+float pid_p_gain_yaw = 16.0;                //Gain setting for the pitch P-controller. //4.0
+float pid_i_gain_yaw = 0.00;               //Gain setting for the pitch I-controller. //0.02
 float pid_d_gain_yaw = 0.0;                //Gain setting for the pitch D-controller.
 int pid_max_yaw = 400;                     //Maximum output of the PID-controller (+/-)
  
@@ -52,10 +52,10 @@ float pid_i_mem_yaw, pid_yaw_setpoint, gyro_yaw_input, pid_output_yaw, pid_last_
 /////////////////////////////
 // Legger inn Calibration values:
 //////////////////////////////
-int s1 = 1500;
-int s2 = 1500;
-int s3 = 1500;
-int s4 = 1500;
+int s1 = 1440;
+int s2 = 1450;
+int s3 = 1515;
+int s4 = 1575;
  
 int s_inc = 400;
 int s1_max, s2_max, s3_max, s4_max;
@@ -67,7 +67,7 @@ bool array_full = false;
 int servo_value;
  
 int number = 0;
-bool debug = true;
+bool debug = false;
  
 void calibrate_servos();
  
@@ -76,13 +76,6 @@ Servo servo1;
 Servo servo2;
 Servo servo3;
 Servo servo4;
- 
-const float h[] = { 0.0151963734917116, 0.125956465856097,  0.358847160652191,  0.358847160652191,  0.125956465856097,  0.0151963734917116};
- 
-#define M (sizeof(h)/sizeof(float))        // Defining length of shift register
-float x[M] = {0};                          // Setting all values in shiftregister B as zero value
-int N = M - 1;                             // Filter Order
-float pitch_angle_lowpass = 0;             // Output variable for y[n]
  
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Setup routine
@@ -191,10 +184,8 @@ void setup() {
   servo3.writeMicroseconds(s3);
   servo4.writeMicroseconds(s4);
  
- 
   //Arduino (Atmega) pins default to inputs, so they don't need to be explicitly declared as inputs.
   //Configure digital poort 29, 28, 27, 26.
- 
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Main program loop
@@ -676,13 +667,13 @@ void calibrate_servos () {
           }
           else {
             if (data_in == '1') {
-              servo_value++;
+              servo_value +=10;
               servo1.writeMicroseconds(servo_value);
               Serial.print("Servoverdi er nå : ");
               Serial.println(servo_value);
             }
             else if (data_in == '2') {
-              servo_value--;
+              servo_value -=10;
               servo1.writeMicroseconds(servo_value);
               Serial.print("Servoverdi er nå : " );
               Serial.println(servo_value);
@@ -725,13 +716,13 @@ void calibrate_servos () {
           }
           else {
             if (data_in == '1') {
-              servo_value++;
+              servo_value +=10;
               servo2.writeMicroseconds(servo_value);
               Serial.print("Servoverdi er nå : " );
               Serial.println(servo_value);
             }
             else if (data_in == '2') {
-              servo_value--;
+              servo_value -=10;
               servo2.writeMicroseconds(servo_value);
               Serial.print("Servoverdi er nå : " );
               Serial.println(servo_value);
@@ -775,13 +766,13 @@ void calibrate_servos () {
           }
           else {
             if (data_in == '1') {
-              servo_value++;
+              servo_value +=10;
               servo3.writeMicroseconds(servo_value);
               Serial.print("Servoverdi er nå : " );
               Serial.println(servo_value);
             }
             else if (data_in == '2') {
-              servo_value--;
+              servo_value -=10;
               servo3.writeMicroseconds(servo_value);
               Serial.print("Servoverdi er nå : " );
               Serial.println(servo_value);
@@ -826,13 +817,13 @@ void calibrate_servos () {
           }
           else {
             if (data_in == '1') {
-              servo_value++;
+              servo_value +=10;
               servo4.writeMicroseconds(servo_value);
               Serial.print("Servoverdi er nå : " );
               Serial.println(servo_value);
             }
             else if (data_in == '2') {
-              servo_value--;
+              servo_value -=10;
               servo4.writeMicroseconds(servo_value);
               Serial.print("Servoverdi er nå : " );
               Serial.println(servo_value);

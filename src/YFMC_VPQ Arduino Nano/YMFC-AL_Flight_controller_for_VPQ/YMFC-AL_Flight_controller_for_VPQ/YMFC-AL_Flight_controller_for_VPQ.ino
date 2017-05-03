@@ -22,9 +22,9 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //PID gain and limit settings
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-float pid_p_gain_roll = 1.3;               //Gain setting for the roll P-controller
+float pid_p_gain_roll = 0.6;               //Gain setting for the roll P-controller
 float pid_i_gain_roll = 0;              //Gain setting for the roll I-controller
-float pid_d_gain_roll = 18.0;              //Gain setting for the roll D-controller
+float pid_d_gain_roll = 3.0;              //Gain setting for the roll D-controller
 int pid_max_roll = 400;                    //Maximum output of the PID-controller (+/-)
 
 float pid_p_gain_pitch = pid_p_gain_roll;  //Gain setting for the pitch P-controller.
@@ -32,8 +32,8 @@ float pid_i_gain_pitch = pid_i_gain_roll;  //Gain setting for the pitch I-contro
 float pid_d_gain_pitch = pid_d_gain_roll;  //Gain setting for the pitch D-controller.
 int pid_max_pitch = pid_max_roll;          //Maximum output of the PID-controller (+/-)
 
-float pid_p_gain_yaw = 4.0;                //Gain setting for the pitch P-controller. //4.0
-float pid_i_gain_yaw = 0.03;               //Gain setting for the pitch I-controller. //0.02
+float pid_p_gain_yaw = 1;                //Gain setting for the pitch P-controller. //4.0
+float pid_i_gain_yaw = 0.01;               //Gain setting for the pitch I-controller. //0.02
 float pid_d_gain_yaw = 0.0;                //Gain setting for the pitch D-controller.
 int pid_max_yaw = 400;                     //Maximum output of the PID-controller (+/-)
 
@@ -62,7 +62,7 @@ unsigned long timer_1, timer_2, timer_3, timer_4, current_time;
 unsigned long loop_timer;
 double gyro_pitch, gyro_roll, gyro_yaw;
 double gyro_pitch_sum, gyro_roll_sum, gyro_yaw_sum;
-double gyro_axis_cal[4], gyro_axis_pitch[20], gyro_axis_roll[20], gyro_axis_yaw[20];
+double gyro_axis_cal[4], acc_axis_cal[3],  gyro_axis_pitch[20], gyro_axis_roll[20], gyro_axis_yaw[20];
 float pid_error_temp;
 float pid_i_mem_roll, pid_roll_setpoint, gyro_roll_input, pid_output_roll, pid_last_roll_d_error;
 float pid_i_mem_pitch, pid_pitch_setpoint, gyro_pitch_input, pid_output_pitch, pid_last_pitch_d_error;
@@ -73,10 +73,10 @@ boolean gyro_angles_set;
 /////////////////////////////
 // Calibration values
 //////////////////////////////
-int s1 = 1500;
-int s2 = 1500;
-int s3 = 1500;
-int s4 = 1500;
+int s1 = 1460;
+int s2 = 1460;
+int s3 = 1470;
+int s4 = 1530;
  
 int s_inc = 400;
 int s1_max, s2_max, s3_max, s4_max;
@@ -88,7 +88,7 @@ bool array_full = false;
 int servo_value;
  
 int number = 0;
-bool debug = false;
+bool debug = true;
  
 void calibrate_servos();
  
@@ -144,6 +144,9 @@ void setup(){
     gyro_axis_cal[1] += gyro_axis[1];                                       //Ad roll value to gyro_roll_cal.
     gyro_axis_cal[2] += gyro_axis[2];                                       //Ad pitch value to gyro_pitch_cal.
     gyro_axis_cal[3] += gyro_axis[3];                                       //Ad yaw value to gyro_yaw_cal.
+    //Need acc offset too!  
+    acc_axis_cal[1] += acc_x;                                         //Ad pitch value to acc_roll_cal.
+    acc_axis_cal[2] += acc_y;                                         //Ad roll value to acc_roll_cal.
     //We don't want the esc's to be beeping annoyingly. So let's give them a 1000us puls while calibrating the gyro.
     PORTD |= B11110000;                                                     //Set digital poort 4, 5, 6 and 7 high.
     delayMicroseconds(1000);                                                //Wait 1000us.
@@ -154,6 +157,10 @@ void setup(){
   gyro_axis_cal[1] /= 2000;                                                 //Divide the roll total by 2000.
   gyro_axis_cal[2] /= 2000;                                                 //Divide the pitch total by 2000.
   gyro_axis_cal[3] /= 2000;                                                 //Divide the yaw total by 2000.
+  acc_axis_cal[1] /= 2000; //x ??
+  acc_axis_cal[2] /= 2000; //y ??
+  acc_axis_cal[1] -= 113.15;
+  acc_axis_cal[2] += 198.70;
 
   PCICR |= (1 << PCIE0);                                                    //Set PCIE0 to enable PCMSK0 scan.
   PCMSK0 |= (1 << PCINT0);                                                  //Set PCINT0 (digital input 8) to trigger an interrupt on state change.
@@ -264,14 +271,14 @@ void loop(){
   }
   
   //Place the MPU-6050 spirit level and note the values in the following two lines for calibration.
-  angle_pitch_acc -= 0.0;                                                   //Accelerometer calibration value for pitch.
-  angle_roll_acc -= 0.0;                                                    //Accelerometer calibration value for roll.
+  angle_pitch_acc -= acc_axis_cal[1];                                       //Accelerometer calibration value for pitch.
+  angle_roll_acc -= acc_axis_cal[2];                                        //Accelerometer calibration value for roll.
   
   angle_pitch = angle_pitch * 0.9996 + angle_pitch_acc * 0.0004;            //Correct the drift of the gyro pitch angle with the accelerometer pitch angle.
   angle_roll = angle_roll * 0.9996 + angle_roll_acc * 0.0004;               //Correct the drift of the gyro roll angle with the accelerometer roll angle.
 
-  pitch_level_adjust = angle_pitch * 15;                                    //Calculate the pitch angle correction
-  roll_level_adjust = angle_roll * 15;                                      //Calculate the roll angle correction
+  pitch_level_adjust = angle_pitch * 10;                                    //Calculate the pitch angle correction
+  roll_level_adjust = angle_roll * 10;                                      //Calculate the roll angle correction
 
   if(!auto_level){                                                          //If the quadcopter is not in auto-level mode
     pitch_level_adjust = 0;                                                 //Set the pitch angle correction to zero.
@@ -385,20 +392,24 @@ void loop(){
     servo4.writeMicroseconds(servo_4);
 
     if (debug){
-      Serial.print(pid_output_roll);
-      Serial.print(" = ");
-      Serial.print(pid_p_gain_roll);
+      Serial.print(angle_pitch);
+      Serial.print(" ");
+      Serial.print(angle_roll);
       number++;
-      Serial.print(" * ");
-      Serial.print(pid_error_temp);
-      Serial.print(" + ");
-      Serial.print(pid_i_mem_roll);
-      Serial.print(" + ");
-      Serial.print(pid_d_gain_roll);
-      Serial.print(" * (");
-      Serial.print(pid_error_temp);
-      Serial.print(" - ");
-      Serial.println(pid_last_roll_d_error);
+      Serial.print(" ");
+      Serial.print(gyro_roll_input);
+      Serial.print(" ");
+      Serial.print(gyro_pitch_input);
+      Serial.print(" ");
+      Serial.print(gyro_yaw_input);
+      Serial.print(" ");
+      Serial.print(esc_1);
+      Serial.print(" ");
+      Serial.print(esc_2);
+      Serial.print(" ");
+      Serial.print(esc_3);
+      Serial.print(" ");
+      Serial.println(esc_4);
     }
     //pid_output_roll = pid_p_gain_roll * pid_error_temp + pid_i_mem_roll + pid_d_gain_roll * (pid_error_temp - pid_last_roll_d_error); roll/pitch pid output crazy, roll = pid_i_mem_roll
   }
@@ -705,13 +716,13 @@ void calibrate_servos () {
           }
           else {
             if (data_in == '1') {
-              servo_value++;
+              servo_value += 10;
               servo1.writeMicroseconds(servo_value);
               Serial.print("Servoverdi er nå : ");
               Serial.println(servo_value);
             }
             else if (data_in == '2') {
-              servo_value--;
+              servo_value -= 10;
               servo1.writeMicroseconds(servo_value);
               Serial.print("Servoverdi er nå : " );
               Serial.println(servo_value);
@@ -754,13 +765,13 @@ void calibrate_servos () {
           }
           else {
             if (data_in == '1') {
-              servo_value++;
+              servo_value += 10;
               servo2.writeMicroseconds(servo_value);
               Serial.print("Servoverdi er nå : " );
               Serial.println(servo_value);
             }
             else if (data_in == '2') {
-              servo_value--;
+              servo_value -= 10;
               servo2.writeMicroseconds(servo_value);
               Serial.print("Servoverdi er nå : " );
               Serial.println(servo_value);
@@ -804,13 +815,13 @@ void calibrate_servos () {
           }
           else {
             if (data_in == '1') {
-              servo_value++;
+              servo_value += 10;
               servo3.writeMicroseconds(servo_value);
               Serial.print("Servoverdi er nå : " );
               Serial.println(servo_value);
             }
             else if (data_in == '2') {
-              servo_value--;
+              servo_value -= 10;
               servo3.writeMicroseconds(servo_value);
               Serial.print("Servoverdi er nå : " );
               Serial.println(servo_value);
@@ -855,13 +866,13 @@ void calibrate_servos () {
           }
           else {
             if (data_in == '1') {
-              servo_value++;
+              servo_value += 10;
               servo4.writeMicroseconds(servo_value);
               Serial.print("Servoverdi er nå : " );
               Serial.println(servo_value);
             }
             else if (data_in == '2') {
-              servo_value--;
+              servo_value -= 10;
               servo4.writeMicroseconds(servo_value);
               Serial.print("Servoverdi er nå : " );
               Serial.println(servo_value);

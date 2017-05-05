@@ -9,9 +9,9 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //PID gain and limit settings
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-float pid_p_gain_roll = 1.2;               //Gain setting for the roll P-controller (1.3)
-float pid_i_gain_roll = 0.02;              //Gain setting for the roll I-controller (0.05)
-float pid_d_gain_roll = 10;                //Gain setting for the roll D-controller (15)
+float pid_p_gain_roll = 0.8;               //Gain setting for the roll P-controller (1.3)
+float pid_i_gain_roll = 0.01;              //Gain setting for the roll I-controller (0.05)
+float pid_d_gain_roll = 9;                //Gain setting for the roll D-controller (15)
 int pid_max_roll = 400;                    //Maximum output of the PID-controller (+/-)
  
 float pid_p_gain_pitch = pid_p_gain_roll;  //Gain setting for the pitch P-controller.
@@ -52,9 +52,9 @@ float pid_i_mem_yaw, pid_yaw_setpoint, gyro_yaw_input, pid_output_yaw, pid_last_
 /////////////////////////////
 // Legger inn Calibration values:
 //////////////////////////////
-int s1 = 1380;
+int s1 = 1390;
 int s2 = 1475;
-int s3 = 1400;
+int s3 = 1550;
 int s4 = 1600;
  
 int s_inc = 400;
@@ -281,10 +281,10 @@ void loop() {
   if (start == 2) {                                                         //The motors are started.
     if (throttle > 1800) throttle = 1800;                                   //We need some room to keep full control at full throttle.
  
-    esc_1 = (throttle - pid_output_pitch + pid_output_roll - pid_output_yaw)*1.044; //Calculate the pulse for esc 1 (front-right - CCW)
-    esc_2 = (throttle + pid_output_pitch + pid_output_roll + pid_output_yaw)*1.046; //Calculate the pulse for esc 2 (rear-right - CW)
-    esc_3 = (throttle + pid_output_pitch - pid_output_roll - pid_output_yaw)*0.986; //Calculate the pulse for esc 3 (rear-left - CCW)
-    esc_4 = (throttle - pid_output_pitch - pid_output_roll + pid_output_yaw)*1.022; //Calculate the pulse for esc 4 (front-left - CW)
+    esc_1 = throttle - pid_output_pitch + pid_output_roll - pid_output_yaw; //Calculate the pulse for esc 1 (front-right - CCW)
+    esc_2 = throttle + pid_output_pitch + pid_output_roll + pid_output_yaw; //Calculate the pulse for esc 2 (rear-right - CW)
+    esc_3 = throttle + pid_output_pitch - pid_output_roll - pid_output_yaw; //Calculate the pulse for esc 3 (rear-left - CCW)
+    esc_4 = throttle - pid_output_pitch - pid_output_roll + pid_output_yaw; //Calculate the pulse for esc 4 (front-left - CW)
  
     /*if (battery_voltage < 1240 && battery_voltage > 800) {                  //Is the battery connected?
       esc_1 += esc_1 * ((1240 - battery_voltage) / (float)3500);            //Compensate the esc-1 pulse for voltage drop.
@@ -308,10 +308,10 @@ void loop() {
     servo_3 = map(esc_3, 1000, 2000, s3, s3_max);
     servo_4 = map(esc_4, 1000, 2000, s4, s4_max); 
 
-    esc_1 = map(esc_1, 1000, 2000, 1300, 1500);
-    esc_2 = map(esc_2, 1000, 2000, 1300, 1500);
-    esc_3 = map(esc_3, 1000, 2000, 1300, 1500);
-    esc_4 = map(esc_4, 1000, 2000, 1300, 1500);
+    esc_1 = map(esc_1, 1000, 2000, 1000, 1000);
+    esc_2 = map(esc_2, 1000, 2000, 1000, 1000);
+    esc_3 = map(esc_3, 1000, 2000, 1300, 1800);
+    esc_4 = map(esc_4, 1000, 2000, 1000, 1000);
  
     //send servo val 
     servo1.writeMicroseconds(servo_1);

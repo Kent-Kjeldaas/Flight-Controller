@@ -9,8 +9,8 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //PID gain and limit settings
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-float pid_p_gain_roll = 1.2;               //Gain setting for the roll P-controller (1.3)
-float pid_i_gain_roll = 0.02;              //Gain setting for the roll I-controller (0.05)
+float pid_p_gain_roll = 7.5;               //Gain setting for the roll P-controller (1.3) //6.8
+float pid_i_gain_roll = 0.0;              //Gain setting for the roll I-controller (0.05)
 float pid_d_gain_roll = 10;                //Gain setting for the roll D-controller (15)
 int pid_max_roll = 400;                    //Maximum output of the PID-controller (+/-)
  
@@ -20,7 +20,7 @@ float pid_d_gain_pitch = pid_d_gain_roll;  //Gain setting for the pitch D-contro
 int pid_max_pitch = pid_max_roll;          //Maximum output of the PID-controller (+/-)
  
 float pid_p_gain_yaw = 18.0;                //Gain setting for the pitch P-controller. //4.0
-float pid_i_gain_yaw = 0.04;               //Gain setting for the pitch I-controller. //0.02
+float pid_i_gain_yaw = 0.04;            //Gain setting for the pitch I-controller. //0.02
 float pid_d_gain_yaw = 0.0;                //Gain setting for the pitch D-controller.
 int pid_max_yaw = 400;                     //Maximum output of the PID-controller (+/-)
  
@@ -52,10 +52,14 @@ float pid_i_mem_yaw, pid_yaw_setpoint, gyro_yaw_input, pid_output_yaw, pid_last_
 /////////////////////////////
 // Legger inn Calibration values:
 //////////////////////////////
-int s1 = 1380;
-int s2 = 1475;
+int s1 = 1425;
+int s2 = 1425;
 int s3 = 1400;
-int s4 = 1600;
+int s4 = 1675;
+
+double stick_sensitiviy_pitch = 40;
+double stick_sensitiviy_roll = 40;
+double stick_sensitiviy_yaw = 40;
  
 int s_inc = 400;
 int s1_max, s2_max, s3_max, s4_max;
@@ -196,9 +200,13 @@ void loop() {
   receiver_input_channel_2 = convert_receiver_channel(2);      //Convert the actual receiver signals for roll to the standard 1000 - 2000us.
   receiver_input_channel_3 = convert_receiver_channel(3);      //Convert the actual receiver signals for throttle to the standard 1000 - 2000us.
   receiver_input_channel_4 = convert_receiver_channel(4);      //Convert the actual receiver signals for yaw to the standard 1000 - 2000us.
- 
+  
+  //receiver_input_channel_1 /= pitchSpeed;
+  //receiver_input_channel_2 /= rollSpeed;
+  //receiver_input_channel_4 /= yawSpeed;
+  
   //Let's get the current gyro data
-  gyro_signalen();                                           //Read the gyro output.
+  gyro_signalen(); //Read the gyro output.
   //Get degree per second
   gyro_roll_input = (gyro_roll_input * 0.8) + ((gyro_roll / 57.14286) * 0.2);            //Gyro pid input is deg/sec.
   gyro_pitch_input = (gyro_pitch_input * 0.8) + ((gyro_pitch / 57.14286) * 0.2);         //Gyro pid input is deg/sec.
@@ -240,6 +248,7 @@ void loop() {
     pid_i_mem_yaw = 0;
     pid_last_yaw_d_error = 0;
   }
+  
   //Stopping the motors: throttle low and yaw right.
   if (start == 2 && receiver_input_channel_3 < 1050 && receiver_input_channel_4 > 1950)start = 0;
  
@@ -247,23 +256,23 @@ void loop() {
   //In the case of deviding by 3 the max roll rate is aprox 164 degrees per second ( (500-8)/3 = 164d/s ).
   pid_roll_setpoint = 0;
   //We need a little dead band of 16us for better results.
-  if (receiver_input_channel_1 > 1508)pid_roll_setpoint = (receiver_input_channel_1 - 1508) / 3.0;
-  else if (receiver_input_channel_1 < 1492)pid_roll_setpoint = (receiver_input_channel_1 - 1492) / 3.0;
+  if (receiver_input_channel_1 > 1508)pid_roll_setpoint = (receiver_input_channel_1 - 1508) / stick_sensitiviy_pitch;  // 
+  else if (receiver_input_channel_1 < 1492)pid_roll_setpoint = (receiver_input_channel_1 - 1492) / stick_sensitiviy_pitch;
  
   //The PID set point in degrees per second is determined by the pitch receiver input.
   //In the case of deviding by 3 the max pitch rate is aprox 164 degrees per second ( (500-8)/3 = 164d/s ).
   pid_pitch_setpoint = 0;
   //We need a little dead band of 16us for better results.
-  if (receiver_input_channel_2 > 1508)pid_pitch_setpoint = (receiver_input_channel_2 - 1508) / 3.0;
-  else if (receiver_input_channel_2 < 1492)pid_pitch_setpoint = (receiver_input_channel_2 - 1492) / 3.0;
+  if (receiver_input_channel_2 > 1508)pid_pitch_setpoint = (receiver_input_channel_2 - 1508) / stick_sensitiviy_roll;
+  else if (receiver_input_channel_2 < 1492)pid_pitch_setpoint = (receiver_input_channel_2 - 1492) / stick_sensitiviy_roll;
  
   //The PID set point in degrees per second is determined by the yaw receiver input.
   //In the case of deviding by 3 the max yaw rate is aprox 164 degrees per second ( (500-8)/3 = 164d/s ).
   pid_yaw_setpoint = 0;
   //We need a little dead band of 16us for better results.
   if (receiver_input_channel_3 > 1050) { //Do not yaw when turning off the motors.
-    if (receiver_input_channel_4 > 1508)pid_yaw_setpoint = (receiver_input_channel_4 - 1508) / 3.0;
-    else if (receiver_input_channel_4 < 1492)pid_yaw_setpoint = (receiver_input_channel_4 - 1492) / 3.0;
+    if (receiver_input_channel_4 > 1508)pid_yaw_setpoint = (receiver_input_channel_4 - 1508) / stick_sensitiviy_yaw;
+    else if (receiver_input_channel_4 < 1492)pid_yaw_setpoint = (receiver_input_channel_4 - 1492) / stick_sensitiviy_yaw;
   }
   //PID inputs are known. So we can calculate the pid output.
   calculate_pid();

@@ -1,7 +1,4 @@
-#include <Servo.h>
- 
-//#include <ServoTimer2.h>
- 
+#include <Servo.h>                         //Include the Servo.h library so we can use servos to adjust pitch on propeller.
 #include <Wire.h>                          //Include the Wire.h library so we can communicate with the gyro.
 #include <EEPROM.h>                        //Include the EEPROM.h library so we can store information onto the EEPROM
  
@@ -9,8 +6,8 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //PID gain and limit settings
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-float pid_p_gain_roll = 7.5;               //Gain setting for the roll P-controller (1.3) //6.8
-float pid_i_gain_roll = 0.0;              //Gain setting for the roll I-controller (0.05)
+float pid_p_gain_roll = 11.5;              //Gain setting for the roll P-controller (1.3) //(11.5 perf for max)
+float pid_i_gain_roll = 0.03;              //Gain setting for the roll I-controller (0.05)
 float pid_d_gain_roll = 10;                //Gain setting for the roll D-controller (15)
 int pid_max_roll = 400;                    //Maximum output of the PID-controller (+/-)
  
@@ -52,8 +49,8 @@ float pid_i_mem_yaw, pid_yaw_setpoint, gyro_yaw_input, pid_output_yaw, pid_last_
 /////////////////////////////
 // Legger inn Calibration values:
 //////////////////////////////
-int s1 = 1425;
-int s2 = 1425;
+int s1 = 1400;
+int s2 = 1450;
 int s3 = 1400;
 int s4 = 1675;
 
@@ -71,7 +68,7 @@ bool array_full = false;
 int servo_value;
  
 int number = 0;
-bool debug = false;
+bool debug = true;
  
 void calibrate_servos();
  
@@ -329,22 +326,41 @@ void loop() {
     servo4.writeMicroseconds(servo_4);
 
     if (debug){
+      Serial.print(pid_output_pitch); //high
+      Serial.print(" ");
+      Serial.print(pid_output_roll); //low
+      Serial.print(" ");
+      Serial.println(pid_output_yaw); //nothing
+      
+      /*
+      Serial.print(pid_output_pitch); //high
+      Serial.print(" ");
+      Serial.print(pid_output_roll); //low
+      Serial.print(" ");
+      Serial.println(pid_output_yaw); //nothing
+     
+      
       Serial.print(number);
       number++;
       Serial.print(" ");
+      */
+      /*
       Serial.print(esc_1);
       Serial.print(" ");
       Serial.print(esc_2);
       Serial.print(" ");
       Serial.print(esc_3);
       Serial.print(" ");
-      Serial.print(esc_4);
+      Serial.println(esc_4);
+      */
+      /*
       Serial.print(" ");
       Serial.print(gyro_pitch_input );
       Serial.print(" ");
       Serial.print(gyro_roll_input);
       Serial.print(" ");
       Serial.println(gyro_yaw_input);
+      */
     }
   }
  

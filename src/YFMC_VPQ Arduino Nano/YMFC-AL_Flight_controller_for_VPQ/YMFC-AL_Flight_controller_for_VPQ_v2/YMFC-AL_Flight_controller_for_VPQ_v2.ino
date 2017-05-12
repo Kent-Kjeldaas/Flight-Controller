@@ -6,7 +6,7 @@
 //PID gain and limit settings
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 float pid_p_gain_roll = 11.5;              //Gain setting for the roll P-controller (1.3) //(11.5 perf for max)
-float pid_i_gain_roll = 0.03;              //Gain setting for the roll I-controller (0.05)
+float pid_i_gain_roll = 0.3;              //Gain setting for the roll I-controller (0.05) //more? or less?
 float pid_d_gain_roll = 10;                //Gain setting for the roll D-controller (15)
 int pid_max_roll = 400;                    //Maximum output of the PID-controller (+/-)
  
@@ -58,8 +58,8 @@ boolean gyro_angles_set;
 /////////////////////////////
 // Calibration values
 //////////////////////////////
-int s1 = 1400;
-int s2 = 1450;
+int s1 = 1375;
+int s2 = 1150;
 int s3 = 1400;
 int s4 = 1675;
  
@@ -236,8 +236,8 @@ void loop(){
   
   //AVERAGE FILTER
   //Add to array by removing the oldest data
-  gyro_axis_pitch[oldest_data] = gyro_roll_input;
-  gyro_axis_roll[oldest_data] = gyro_pitch_input;
+  gyro_axis_pitch[oldest_data] = gyro_pitch_input;
+  gyro_axis_roll[oldest_data] = gyro_roll_input;
   gyro_axis_yaw[oldest_data] = gyro_yaw_input;
   acc_axis_pitch[oldest_data] = acc_x;
   acc_axis_roll[oldest_data] = acc_y;
@@ -276,19 +276,13 @@ void loop(){
     acc_roll_sum /= number_of_samples;
     acc_yaw_sum /= number_of_samples;
     
-    gyro_pitch_input = gyro_pitch_sum;
-    gyro_roll_input = gyro_roll_sum;
-    gyro_yaw_input = gyro_yaw_sum;
+    gyro_pitch_input = gyro_pitch_sum/5;
+    gyro_roll_input = gyro_roll_sum/5;
+    gyro_yaw_input = gyro_yaw_sum/5;
     acc_x = acc_pitch_sum;
     acc_y = acc_roll_sum;
     acc_z = acc_yaw_sum;
   }
-
-  Serial.print(gyro_roll_input);
-  Serial.print(" ");
-  Serial.print(gyro_pitch_input);
-  Serial.print(" ");
-  Serial.println(gyro_yaw_input);
   
   //Accelerometer angle calculations
   acc_total_vector = sqrt((acc_x*acc_x)+(acc_y*acc_y)+(acc_z*acc_z));       //Calculate the total accelerometer vector
@@ -328,8 +322,8 @@ void loop(){
     angle_roll = angle_roll * 0.9996 + angle_roll_acc * 0.0004;               //Correct the drift of the gyro roll angle with the accelerometer roll angle. 0.9996 <----- adjust?
   }
 
-  pitch_level_adjust = angle_pitch * 13;                                    //Calculate the pitch angle correction
-  roll_level_adjust = angle_roll * 13;                                      //Calculate the roll angle correction <---- adjust? 
+  pitch_level_adjust = angle_pitch * 18;                                    //Calculate the pitch angle correction
+  roll_level_adjust = angle_roll * 18;                                      //Calculate the roll angle correction <---- adjust? 
 
   if(!auto_level){                                                          //If the quadcopter is not in auto-level mode
     pitch_level_adjust = 0;                                                 //Set the pitch angle correction to zero.
@@ -469,12 +463,12 @@ void loop(){
       Serial.print(acc_y); //low
       Serial.print(" ");
       Serial.print(acc_z); //nothing
+      */
       /*
-      Serial.print(" ");
       Serial.print(angle_pitch_acc);
       Serial.print(" ");
-      Serial.println(angle_roll_acc);
-      */
+      Serial.print(angle_roll_acc);
+      
       /*
       Serial.print(acc_axis[1]);
       Serial.print(" ");
@@ -494,6 +488,7 @@ void loop(){
       Serial.print(gyro_pitch_input);
       Serial.print(" ");
       Serial.println(gyro_yaw_input);
+      
       */
       /*
       Serial.print(pid_output_pitch);
@@ -509,12 +504,12 @@ void loop(){
       Serial.print(pid_error_temp);
       Serial.print(" - ");
       Serial.println(pid_last_pitch_d_error);
-      /*
+      */
       Serial.print(" ");
       Serial.print(pitch_level_adjust);
       Serial.print(" ");
       Serial.println(roll_level_adjust);
-      */
+      
       //pid_output_yaw = pid_p_gain_yaw * pid_error_temp + pid_i_mem_yaw + pid_d_gain_yaw * (pid_error_temp - pid_last_yaw_d_error);
     }
   }

@@ -1,20 +1,3 @@
-///////////////////////////////////////////////////////////////////////////////////////
-//Terms of use
-///////////////////////////////////////////////////////////////////////////////////////
-//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//THE SOFTWARE.
-///////////////////////////////////////////////////////////////////////////////////////
-//Safety note
-///////////////////////////////////////////////////////////////////////////////////////
-//Always remove the propellers and stay away from the motors unless you 
-//are 100% certain of what you are doing.
-///////////////////////////////////////////////////////////////////////////////////////
-
 #include <Wire.h>                          //Include the Wire.h library so we can communicate with the gyro.
 #include <EEPROM.h>                        //Include the EEPROM.h library so we can store information onto the EEPROM
 #include <Servo.h>
@@ -94,9 +77,6 @@ void setup(){
   //Arduino (Atmega) pins default to inputs, so they don't need to be explicitly declared as inputs.
   DDRD |= B11110000;                                           //Configure digital poort 4, 5, 6 and 7 as output.
   DDRB |= B00110000;                                           //Configure digital poort 12 and 13 as output.
-    
-  //Use the led on the Arduino for startup indication.
-  digitalWrite(13,HIGH);                                       //Turn on the warning led.
   
   //Check the EEPROM signature to make sure that the setup program is executed
   while(eeprom_data[33] != 'J' || eeprom_data[34] != 'M' || eeprom_data[35] != 'B')delay(10);
@@ -112,7 +92,6 @@ void setup(){
 
   //Let's take multiple gyro data samples so we can determine the average gyro offset (calibration).
   for (cal_int = 0; cal_int < 2000 ; cal_int ++){              //Take 2000 readings for calibration.
-    if(cal_int % 15 == 0)digitalWrite(13, !digitalRead(13));   //Change the led status to indicate calibration.
     gyro_signalen();                                           //Read the gyro output.
     gyro_axis_cal[1] += gyro_axis[1];                          //Ad roll value to gyro_roll_cal.
     gyro_axis_cal[2] += gyro_axis[2];                          //Ad pitch value to gyro_pitch_cal.
@@ -170,7 +149,7 @@ void setup(){
 //Main program loop
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void loop(){
-  if (first) {
+  while (first) {
     if (bd.available()) {
       char start = bd.read();
       if (start = '1') { //add start sign

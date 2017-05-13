@@ -21,6 +21,8 @@ float pid_d_gain_yaw = 0.0;                //Gain setting for the pitch D-contro
 int pid_max_yaw = 400;                     //Maximum output of the PID-controller (+/-)
 
 boolean auto_level = true;                 //Auto level on (true) or off (false)
+bool bluetooth = false; // Bluetooth or Radio Control?
+bool first = bluetooth;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Declaring global variables
@@ -55,6 +57,16 @@ float pid_i_mem_yaw, pid_yaw_setpoint, gyro_yaw_input, pid_output_yaw, pid_last_
 float angle_roll_acc, angle_pitch_acc, angle_pitch, angle_roll;
 boolean gyro_angles_set;
 
+bool array_full = false;
+int number = 0;
+String readString; //main captured String
+String pitch; //data String
+String roll;
+String throttle;
+int ind1; // , locations
+int ind2;
+int ind3;
+
 /////////////////////////////
 // Calibration values
 //////////////////////////////
@@ -62,15 +74,8 @@ int s1 = 1375;
 int s2 = 1500;
 int s3 = 1375;
 int s4 = 1750;
- 
 int s_inc = 400;
 int s1_max, s2_max, s3_max, s4_max;
-bool array_full = false;
-
-int number = 0;
-bool debug = true;
- 
-//void calibrate_servos();
  
 // Servo
 Servo servo1;
@@ -202,6 +207,17 @@ void setup(){
   s2_max = s2 + s_inc;
   s3_max = s3 - s_inc;
   s4_max = s4 + s_inc;
+
+  while (first) {
+    if (bd.available()) {
+      char start = bd.read();
+      if (start = '1') { //expected value
+        bd.write("r");   //respond to ground station
+        //make sure it is sent
+        first = false;
+      }
+    }
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Main program loop
@@ -436,85 +452,6 @@ void loop(){
     servo3.writeMicroseconds(servo_3);
     servo4.writeMicroseconds(servo_4);
 
-    if (debug){
-      /*
-      Serial.print(esc_1);
-      Serial.print(" ");
-      Serial.print(esc_2);
-      Serial.print(" ");
-      Serial.print(esc_3);
-      Serial.print(" ");
-      Serial.print(esc_4);
-      
-      Serial.print(" ");
-      
-      Serial.print(pid_output_pitch); //high
-      Serial.print(" ");
-      Serial.print(pid_output_roll); //low
-      Serial.print(" ");
-      Serial.println(pid_output_yaw); //nothing
-      */
-      
-      //Serial.print(acc_total_vector);
-      /*
-      Serial.print(" ");
-      Serial.print(acc_x); //high
-      Serial.print(" ");
-      Serial.print(acc_y); //low
-      Serial.print(" ");
-      Serial.print(acc_z); //nothing
-      */
-      /*
-      Serial.print(angle_pitch_acc);
-      Serial.print(" ");
-      Serial.print(angle_roll_acc);
-      
-      /*
-      Serial.print(acc_axis[1]);
-      Serial.print(" ");
-      Serial.print(" ");
-      Serial.print(acc_axis[3]); //low
-      Serial.print(" ");
-      Serial.print(gyro_axis[1]); //nothing
-      Serial.print(" ");
-      Serial.print(gyro_axis[2]);
-      Serial.print(" ");
-      Serial.println(gyro_axis[3]);
-      */
-      /*
-      Serial.print(" ");
-      Serial.print(gyro_roll_input);
-      Serial.print(" ");
-      Serial.print(gyro_pitch_input);
-      Serial.print(" ");
-      Serial.println(gyro_yaw_input);
-      
-      */
-      /*
-      Serial.print(pid_output_pitch);
-      Serial.print(" = ");
-      Serial.print(pid_p_gain_pitch);
-      Serial.print(" * ");
-      Serial.print(pid_error_temp);
-      Serial.print(" + ");
-      Serial.print(pid_i_mem_pitch);
-      Serial.print(" + ");
-      Serial.print(pid_d_gain_pitch);
-      Serial.print(" * (");
-      Serial.print(pid_error_temp);
-      Serial.print(" - ");
-      Serial.println(pid_last_pitch_d_error);
-      */
-      
-      Serial.print(" ");
-      Serial.print(pitch_level_adjust);
-      Serial.print(" ");
-      Serial.println(roll_level_adjust);
-      
-      //pid_output_yaw = pid_p_gain_yaw * pid_error_temp + pid_i_mem_yaw + pid_d_gain_yaw * (pid_error_temp - pid_last_yaw_d_error);
-    }
-  }
-
   else{
     esc_1 = 1000;                                                           //If start is not 2 keep a 1000us pulse for ess-1.
     esc_2 = 1000;                                                           //If start is not 2 keep a 1000us pulse for ess-2.
@@ -537,8 +474,6 @@ void loop(){
   //that the loop time is still 4000us and no longer! More information can be found on 
   //the Q&A page: 
   //! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
-    
-  //if(micros() - loop_timer > 4050)digitalWrite(A3, HIGH);                   //Turn on the LED if the loop time exceeds 4050us.
   
   //All the information for controlling the motor's is available.
   //The refresh rate is 250Hz. That means the esc's need there pulse every 4ms.
@@ -630,11 +565,37 @@ void gyro_signalen(){
     Wire.endTransmission();                                                 //End the transmission.
     Wire.requestFrom(gyro_address,14);                                      //Request 14 bytes from the gyro.
     
-    receiver_input_channel_1 = convert_receiver_channel(1);                 //Convert the actual receiver signals for pitch to the standard 1000 - 2000us.
-    receiver_input_channel_2 = convert_receiver_channel(2);                 //Convert the actual receiver signals for roll to the standard 1000 - 2000us.
-    receiver_input_channel_3 = convert_receiver_channel(3);                 //Convert the actual receiver signals for throttle to the standard 1000 - 2000us.
-    receiver_input_channel_4 = convert_receiver_channel(4);                 //Convert the actual receiver signals for yaw to the standard 1000 - 2000us.
-    
+    if(!bluetooth){
+      receiver_input_channel_1 = convert_receiver_channel(1);      //Convert the actual receiver signals for pitch to the standard 1000 - 2000us.
+      receiver_input_channel_2 = convert_receiver_channel(2);      //Convert the actual receiver signals for roll to the standard 1000 - 2000us.
+      receiver_input_channel_3 = convert_receiver_channel(3);      //Convert the actual receiver signals for throttle to the standard 1000 - 2000us.
+      receiver_input_channel_4 = convert_receiver_channel(4);      //Convert the actual receiver signals for yaw to the standard 1000 - 2000us.
+    }
+    else{
+      if (bd.available()) {
+        char c = bd.read();
+        if (c == '*') {
+          ind1 = readString.indexOf(',');  //finds location of first,
+          roll = readString.substring(0, ind1);   //captures first data String
+          ind2 = readString.indexOf(',', ind1+1 );   //finds location of second,
+          pitch = readString.substring(ind1+1, ind2);   //captures second data String
+          ind3 = readString.indexOf(',', ind2+1 );
+          throttle = readString.substring(ind2+1, ind3); // ind3+1
+          receiver_input_channel_2 = roll.toInt();
+          receiver_input_channel_1 = pitch.toInt();
+          receiver_input_channel_3 = throttle.toInt();
+          receiver_input_channel_4 = 1500; //need to implement yaw
+         
+          readString=""; //clears variable for new input
+          pitch="";
+          roll="";
+          throttle="";
+        }  
+        else {    
+          readString += c; //makes the string readString
+        }
+      }
+    }
     while(Wire.available() < 14);                                           //Wait until the 14 bytes are received.
     acc_axis[1] = Wire.read()<<8|Wire.read();                               //Add the low and high byte to the acc_x variable.
     acc_axis[2] = Wire.read()<<8|Wire.read();                               //Add the low and high byte to the acc_y variable.

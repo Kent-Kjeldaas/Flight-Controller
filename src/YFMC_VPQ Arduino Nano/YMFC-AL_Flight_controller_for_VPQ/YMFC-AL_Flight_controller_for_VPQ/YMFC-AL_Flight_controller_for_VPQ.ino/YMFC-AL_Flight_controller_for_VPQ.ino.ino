@@ -1,20 +1,3 @@
-///////////////////////////////////////////////////////////////////////////////////////
-//Terms of use
-///////////////////////////////////////////////////////////////////////////////////////
-//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//THE SOFTWARE.
-///////////////////////////////////////////////////////////////////////////////////////
-//Safety note
-///////////////////////////////////////////////////////////////////////////////////////
-//Always remove the propellers and stay away from the motors unless you 
-//are 100% certain of what you are doing.
-///////////////////////////////////////////////////////////////////////////////////////
-
 #include <Servo.h>                         //Include the Servo.h library so we can use servos to adjust pitch on propeller.
 #include <Wire.h>                          //Include the Wire.h library so we can communicate with the gyro.
 #include <EEPROM.h>                        //Include the EEPROM.h library so we can store information onto the EEPROM
@@ -22,18 +5,18 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //PID gain and limit settings
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-float pid_p_gain_roll = 0.6;               //Gain setting for the roll P-controller
-float pid_i_gain_roll = 0;              //Gain setting for the roll I-controller
-float pid_d_gain_roll = 3.0;              //Gain setting for the roll D-controller
+float pid_p_gain_roll = 11.5;              //Gain setting for the roll P-controller (1.3) //(11.5 perf for max)
+float pid_i_gain_roll = 0.03;              //Gain setting for the roll I-controller (0.05)
+float pid_d_gain_roll = 10;                //Gain setting for the roll D-controller (15)
 int pid_max_roll = 400;                    //Maximum output of the PID-controller (+/-)
-
+ 
 float pid_p_gain_pitch = pid_p_gain_roll;  //Gain setting for the pitch P-controller.
 float pid_i_gain_pitch = pid_i_gain_roll;  //Gain setting for the pitch I-controller.
 float pid_d_gain_pitch = pid_d_gain_roll;  //Gain setting for the pitch D-controller.
 int pid_max_pitch = pid_max_roll;          //Maximum output of the PID-controller (+/-)
-
-float pid_p_gain_yaw = 1;                //Gain setting for the pitch P-controller. //4.0
-float pid_i_gain_yaw = 0.01;               //Gain setting for the pitch I-controller. //0.02
+ 
+float pid_p_gain_yaw = 18.0;                //Gain setting for the pitch P-controller. //4.0
+float pid_i_gain_yaw = 0.04;            //Gain setting for the pitch I-controller. //0.02
 float pid_d_gain_yaw = 0.0;                //Gain setting for the pitch D-controller.
 int pid_max_yaw = 400;                     //Maximum output of the PID-controller (+/-)
 
@@ -53,6 +36,8 @@ int cal_int, start, gyro_address;
 int receiver_input[5];
 int oldest_data = 0;
 int number_of_samples = 3;
+
+
 int acc_axis[4], gyro_axis[4];
 float roll_level_adjust, pitch_level_adjust;
 
@@ -73,22 +58,17 @@ boolean gyro_angles_set;
 /////////////////////////////
 // Calibration values
 //////////////////////////////
-int s1 = 1380;
-int s2 = 1475;
+int s1 = 1400;
+int s2 = 1450;
 int s3 = 1400;
-int s4 = 1600;
+int s4 = 1675;
  
 int s_inc = 400;
 int s1_max, s2_max, s3_max, s4_max;
- 
-unsigned long tid, tid2;
-char data_in;
-bool cal = false;
 bool array_full = false;
-int servo_value;
- 
+
 int number = 0;
-bool debug = true;
+bool debug = false;
  
 //void calibrate_servos();
  
@@ -97,6 +77,15 @@ Servo servo1;
 Servo servo2;
 Servo servo3;
 Servo servo4;
+
+const float h[] = {0.00399582123524659,  0.00979098916767830,  0.0195392007689703, 0.0328394476348149, 0.0486189357392199, 0.0649045550087392, 0.0791796000445175, 0.0889684699880066, 0.0924516144752421, 0.0889684699880066, 0.0791796000445175, 0.0649045550087392, 0.0486189357392199, 0.0328394476348149, 0.0195392007689703, 0.00979098916767830,  0.00399582123524659};
+ 
+#define M (sizeof(h)/sizeof(float))         // Defining length of shift register
+float x[M]={0};                             // Setting all values in shiftregister B as zero value
+float y[M]={0};
+int N = M-1;                                // Filter Order
+float angle=0;                              // Output variable for y[n]
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Setup routine
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -139,15 +128,17 @@ void setup(){
 
   //Let's take multiple gyro data samples so we can determine the average gyro offset (calibration).
   for (cal_int = 0; cal_int < 2000 ; cal_int ++){                           //Take 2000 readings for calibration.
-    acc_total_vector = sqrt((acc_x*acc_x)+(acc_y*acc_y)+(acc_z*acc_z));       //Calculate the total accelerometer vector.
-  
-    if(abs(acc_y) < acc_total_vector){                                        //Prevent the asin function to produce a NaN
-      angle_pitch_acc = asin((float)acc_y/acc_total_vector)* 57.296;          //Calculate the pitch angle.
-    }
-    if(abs(acc_x) < acc_total_vector){                                        //Prevent the asin function to produce a NaN
-      angle_roll_acc = asin((float)acc_x/acc_total_vector)* -57.296;          //Calculate the roll angle.
-    }
     gyro_signalen();                                                        //Read the gyro output.
+
+    acc_total_vector = sqrt((acc_x*acc_x)+(acc_y*acc_y)+(acc_z*acc_z));     //Calculate the total accelerometer vector.
+  
+    if(abs(acc_y) < acc_total_vector){                                      //Prevent the asin function to produce a NaN
+      angle_pitch_acc = asin((float)acc_y/acc_total_vector)* 57.296;        //Calculate the pitch angle.
+    }
+    if(abs(acc_x) < acc_total_vector){                                      //Prevent the asin function to produce a NaN
+      angle_roll_acc = asin((float)acc_x/acc_total_vector)* -57.296;        //Calculate the roll angle.
+    }
+    
     gyro_axis_cal[1] += gyro_axis[1];                                       //Ad roll value to gyro_roll_cal.
     gyro_axis_cal[2] += gyro_axis[2];                                       //Ad pitch value to gyro_pitch_cal.
     gyro_axis_cal[3] += gyro_axis[3];                                       //Ad yaw value to gyro_yaw_cal.
@@ -164,8 +155,8 @@ void setup(){
   gyro_axis_cal[1] /= 2000;                                                 //Divide the roll total by 2000.
   gyro_axis_cal[2] /= 2000;                                                 //Divide the pitch total by 2000.
   gyro_axis_cal[3] /= 2000;                                                 //Divide the yaw total by 2000.
-  acc_axis_cal[1] /= 2000; //x ??
-  acc_axis_cal[2] /= 2000; //y ??
+  acc_axis_cal[1] /= 2000;                                                  //Divide the pitch_angle sum by 2000.
+  acc_axis_cal[2] /= 2000;                                                  //Divide the roll_angle sum by 2000.
 
   PCICR |= (1 << PCIE0);                                                    //Set PCIE0 to enable PCMSK0 scan.
   PCMSK0 |= (1 << PCINT0);                                                  //Set PCINT0 (digital input 8) to trigger an interrupt on state change.
@@ -206,27 +197,54 @@ void setup(){
   servo3.writeMicroseconds(s3);
   servo4.writeMicroseconds(s4);
  
-  //calibrate_servos();
- 
   s1_max = s1 - s_inc;
   s2_max = s2 + s_inc;
   s3_max = s3 - s_inc;
   s4_max = s4 + s_inc;
- 
-  servo1.writeMicroseconds(s1);
-  servo2.writeMicroseconds(s2);
-  servo3.writeMicroseconds(s3);
-  servo4.writeMicroseconds(s4);
+
+  pinMode(A3, OUTPUT);   // sets the pin as output
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Main program loop
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void loop(){
+  analogWrite(A3, 255);
   //65.5 = 1 deg/sec (check the datasheet of the MPU-6050 for more information).
   gyro_roll_input = (gyro_roll_input * 0.7) + ((gyro_roll / 65.5) * 0.3);   //Gyro pid input is deg/sec.
   gyro_pitch_input = (gyro_pitch_input * 0.7) + ((gyro_pitch / 65.5) * 0.3);//Gyro pid input is deg/sec.
   gyro_yaw_input = (gyro_yaw_input * 0.7) + ((gyro_yaw / 65.5) * 0.3);      //Gyro pid input is deg/sec.
 
+  //Accelerometer angle calculations
+  acc_total_vector = sqrt((acc_x*acc_x)+(acc_y*acc_y)+(acc_z*acc_z));       //Calculate the total accelerometer vector
+  
+  if(abs(acc_y) < acc_total_vector){                                        //Prevent the asin function to produce a NaN
+    angle_pitch_acc = asin((float)acc_y/acc_total_vector)* 57.296;          //Calculate the pitch angle.
+  }
+  if(abs(acc_x) < acc_total_vector){                                        //Prevent the asin function to produce a NaN
+    angle_roll_acc = asin((float)acc_x/acc_total_vector)* -57.296;          //Calculate the roll angle.
+  }
+  
+  //LOW PASS FILTER
+  int i = 0;
+  for(i=N; i>0; i--) {                 // Shifts all previous samples one position
+      x[i] = x[i-1];                   // Makes room for one new sample
+      y[i] = y[i-1];
+  }
+  //remove offset
+  angle_pitch_acc -= acc_axis_cal[1];                                       //Accelerometer calibration value for pitch.
+  angle_roll_acc -= acc_axis_cal[2];                                        //Accelerometer calibration value for roll.
+  
+  y[0] = angle_roll_acc;
+  x[0] = angle_pitch_acc;
+  angle_pitch_acc = h[0] * x[0];       // Compute the convolution x[0]*h[0]7
+  angle_roll_acc = h[0] * y[0];
+ 
+  for(i = 1; i <= N; i++) {            // Summing the rest of the products
+    angle_pitch_acc += h[i] * x[i];    // Convolve rest of the inputs with the filter coefficients
+    angle_roll_acc += h[i] * y[i];
+  }
+
+  //AVERAGE FILTER
   //Add to array by removing the oldest data
   gyro_axis_pitch[oldest_data] = gyro_roll_input;
   gyro_axis_roll[oldest_data] = gyro_pitch_input;
@@ -240,7 +258,15 @@ void loop(){
     array_full = true;
   }
   if(array_full){
-    //get sum 
+    
+    //reset variables
+    gyro_pitch_sum = 0;
+    gyro_roll_sum = 0;
+    gyro_yaw_sum = 0;
+    acc_pitch_sum = 0;
+    acc_roll_sum = 0;
+
+    //get sum
     for(int i = 0; i < number_of_samples ; i++){
       gyro_pitch_sum += gyro_axis_pitch[i];
       gyro_roll_sum  += gyro_axis_roll[i];
@@ -248,14 +274,20 @@ void loop(){
       acc_pitch_sum  += acc_axis_pitch[i];
       acc_roll_sum   += acc_axis_roll[i];
     }
+    
     //get average
-    gyro_pitch_input /= number_of_samples;
-    gyro_roll_input /= number_of_samples;
-    gyro_yaw_input /= number_of_samples;
-    angle_pitch_acc /= number_of_samples;
-    angle_roll_acc /= number_of_samples;
+    gyro_pitch_sum /= number_of_samples;
+    gyro_roll_sum /= number_of_samples;
+    gyro_yaw_sum /= number_of_samples;
+    acc_pitch_sum /= number_of_samples;
+    acc_roll_sum /= number_of_samples;
+    gyro_pitch_input = gyro_pitch_sum;
+    gyro_roll_input = gyro_roll_sum;
+    gyro_yaw_input = gyro_yaw_sum;
+    angle_pitch_acc = acc_pitch_sum;
+    angle_roll_acc = acc_roll_sum;
   }
-
+ 
   ////////////////////////////////////////////////////////////////////////////////////////////////////
   //This is the added IMU code from the videos:
   //https://youtu.be/4BoIE8YQwM8
@@ -270,26 +302,18 @@ void loop(){
   //0.000001066 = 0.0000611 * (3.142(PI) / 180degr) The Arduino sin function is in radians
   angle_pitch -= angle_roll * sin(gyro_yaw * 0.000001066);                  //If the IMU has yawed transfer the roll angle to the pitch angel.
   angle_roll += angle_pitch * sin(gyro_yaw * 0.000001066);                  //If the IMU has yawed transfer the pitch angle to the roll angel.
-
-  //Accelerometer angle calculations
-  acc_total_vector = sqrt((acc_x*acc_x)+(acc_y*acc_y)+(acc_z*acc_z));       //Calculate the total accelerometer vector.
-  
-  if(abs(acc_y) < acc_total_vector){                                        //Prevent the asin function to produce a NaN
-    angle_pitch_acc = asin((float)acc_y/acc_total_vector)* 57.296;          //Calculate the pitch angle.
-  }
-  if(abs(acc_x) < acc_total_vector){                                        //Prevent the asin function to produce a NaN
-    angle_roll_acc = asin((float)acc_x/acc_total_vector)* -57.296;          //Calculate the roll angle.
-  }
   
   //Place the MPU-6050 spirit level and note the values in the following two lines for calibration.
-  angle_pitch_acc -= acc_axis_cal[1];                                       //Accelerometer calibration value for pitch.
-  angle_roll_acc -= acc_axis_cal[2];                                        //Accelerometer calibration value for roll.
+  //angle_pitch_acc -= acc_axis_cal[1];                                       //Accelerometer calibration value for pitch. <- done in low-pass section
+  //angle_roll_acc -= acc_axis_cal[2];                                        //Accelerometer calibration value for roll.
   
-  angle_pitch = angle_pitch * 0.9996 + angle_pitch_acc * 0.0004;            //Correct the drift of the gyro pitch angle with the accelerometer pitch angle.
-  angle_roll = angle_roll * 0.9996 + angle_roll_acc * 0.0004;               //Correct the drift of the gyro roll angle with the accelerometer roll angle.
+  if(gyro_angles_set){
+    angle_pitch = angle_pitch * 0.9996 + angle_pitch_acc * 0.0004;            //Correct the drift of the gyro pitch angle with the accelerometer pitch angle.
+    angle_roll = angle_roll * 0.9996 + angle_roll_acc * 0.0004;               //Correct the drift of the gyro roll angle with the accelerometer roll angle.
+  }
 
-  pitch_level_adjust = angle_pitch * 10;                                    //Calculate the pitch angle correction
-  roll_level_adjust = angle_roll * 10;                                      //Calculate the roll angle correction
+  pitch_level_adjust = angle_pitch * 13;                                    //Calculate the pitch angle correction
+  roll_level_adjust = angle_roll * 13;                                      //Calculate the roll angle correction
 
   if(!auto_level){                                                          //If the quadcopter is not in auto-level mode
     pitch_level_adjust = 0;                                                 //Set the pitch angle correction to zero.
@@ -326,7 +350,7 @@ void loop(){
   else if(receiver_input_channel_1 < 1492)pid_roll_setpoint = receiver_input_channel_1 - 1492;
 
   pid_roll_setpoint -= roll_level_adjust;                                   //Subtract the angle correction from the standardized receiver roll input value.
-  pid_roll_setpoint /= 3.0;                                                 //Divide the setpoint for the PID roll controller by 3 to get angles in degrees.
+  pid_roll_setpoint /= 40.0;                                                 //Divide the setpoint for the PID roll controller by 3 to get angles in degrees.
 
 
   //The PID set point in degrees per second is determined by the pitch receiver input.
@@ -337,15 +361,15 @@ void loop(){
   else if(receiver_input_channel_2 < 1492)pid_pitch_setpoint = receiver_input_channel_2 - 1492;
 
   pid_pitch_setpoint -= pitch_level_adjust;                                  //Subtract the angle correction from the standardized receiver pitch input value.
-  pid_pitch_setpoint /= 3.0;                                                 //Divide the setpoint for the PID pitch controller by 3 to get angles in degrees.
+  pid_pitch_setpoint /= 40.0;                                                 //Divide the setpoint for the PID pitch controller by 3 to get angles in degrees.
 
   //The PID set point in degrees per second is determined by the yaw receiver input.
   //In the case of deviding by 3 the max yaw rate is aprox 164 degrees per second ( (500-8)/3 = 164d/s ).
   pid_yaw_setpoint = 0;
   //We need a little dead band of 16us for better results.
   if(receiver_input_channel_3 > 1050){ //Do not yaw when turning off the motors.
-    if(receiver_input_channel_4 > 1508)pid_yaw_setpoint = (receiver_input_channel_4 - 1508)/3.0;
-    else if(receiver_input_channel_4 < 1492)pid_yaw_setpoint = (receiver_input_channel_4 - 1492)/3.0;
+    if(receiver_input_channel_4 > 1508)pid_yaw_setpoint = (receiver_input_channel_4 - 1508)/40.0;
+    else if(receiver_input_channel_4 < 1492)pid_yaw_setpoint = (receiver_input_channel_4 - 1492)/40.0;
   }
   
   calculate_pid();                                                            //PID inputs are known. So we can calculate the pid output.
@@ -363,10 +387,10 @@ void loop(){
 
   if (start == 2){                                                          //The motors are started.
     if (throttle > 1800) throttle = 1800;                                   //We need some room to keep full control at full throttle.
-    esc_1 = throttle - pid_output_pitch + pid_output_roll - pid_output_yaw; //Calculate the pulse for esc 1 (front-right - CCW)
-    esc_2 = throttle + pid_output_pitch + pid_output_roll + pid_output_yaw; //Calculate the pulse for esc 2 (rear-right - CW)
-    esc_3 = throttle + pid_output_pitch - pid_output_roll - pid_output_yaw; //Calculate the pulse for esc 3 (rear-left - CCW)
-    esc_4 = throttle - pid_output_pitch - pid_output_roll + pid_output_yaw; //Calculate the pulse for esc 4 (front-left - CW)
+    esc_1 = (throttle - pid_output_pitch + pid_output_roll - pid_output_yaw)*1.044; //Calculate the pulse for esc 1 (front-right - CCW)
+    esc_2 = (throttle + pid_output_pitch + pid_output_roll + pid_output_yaw)*1.046; //Calculate the pulse for esc 2 (rear-right - CW)
+    esc_3 = (throttle + pid_output_pitch - pid_output_roll - pid_output_yaw)*0.986; //Calculate the pulse for esc 3 (rear-left - CCW)
+    esc_4 = (throttle - pid_output_pitch - pid_output_roll + pid_output_yaw)*1.022; //Calculate the pulse for esc 4 (front-left - CW)
     /*
     if (battery_voltage < 1240 && battery_voltage > 800){                   //Is the battery connected?
       esc_1 += esc_1 * ((1240 - battery_voltage)/(float)3500);              //Compensate the esc-1 pulse for voltage drop.
@@ -390,7 +414,7 @@ void loop(){
     servo_2 = map(esc_2, 1000, 2000, s2, s2_max);
     servo_3 = map(esc_3, 1000, 2000, s3, s3_max);
     servo_4 = map(esc_4, 1000, 2000, s4, s4_max); 
-    
+
     esc_1 = map(esc_1, 1000, 2000, 1300, 1500);
     esc_2 = map(esc_2, 1000, 2000, 1300, 1500);
     esc_3 = map(esc_3, 1000, 2000, 1300, 1500);
@@ -403,10 +427,28 @@ void loop(){
     servo4.writeMicroseconds(servo_4);
 
     if (debug){
+      /*
+      Serial.print(esc_1);
+      Serial.print(" ");
+      Serial.print(esc_2);
+      Serial.print(" ");
+      Serial.print(esc_3);
+      Serial.print(" ");
+      Serial.print(esc_4);
+      Serial.println(" ");
+      */
+      /*
+      Serial.print(pid_output_pitch); //high
+      Serial.print(" ");
+      Serial.print(pid_output_roll); //low
+      Serial.print(" ");
+      Serial.println(pid_output_yaw); //nothing
+      */
+      Serial.print(acc_total_vector);
+      Serial.print(" ");
       Serial.print(acc_x);
       Serial.print(" ");
       Serial.print(acc_y);
-      number++;
       Serial.print(" ");
       Serial.print(acc_z);
       Serial.print(" ");
@@ -419,15 +461,28 @@ void loop(){
       Serial.print(" ");
       Serial.print(gyro_pitch_input);
       Serial.print(" ");
-      Serial.print(gyro_yaw_input);
+      Serial.println(gyro_yaw_input);
+      
+      /*
+      Serial.print(pid_p_gain_roll);
       Serial.print(" ");
-      Serial.print(esc_1);
+      Serial.print(pid_error_temp);
       Serial.print(" ");
-      Serial.print(esc_2);
+      Serial.print(pid_i_mem_roll);
       Serial.print(" ");
-      Serial.print(esc_3);
+      Serial.print(pid_d_gain_roll);
       Serial.print(" ");
-      Serial.println(esc_4);
+      
+      Serial.print(pid_error_temp);
+      Serial.print(" ");
+      Serial.print(pid_last_roll_d_error);
+      Serial.print(" ");
+      Serial.print(pid_output_yaw);
+      
+      Serial.print(" ");
+      Serial.print(pitch_level_adjust);
+      Serial.print(" ");
+      Serial.println(roll_level_adjust);
       */
     }
     //pid_output_roll = pid_p_gain_roll * pid_error_temp + pid_i_mem_roll + pid_d_gain_roll * (pid_error_temp - pid_last_roll_d_error); roll/pitch pid output crazy, roll = pid_i_mem_roll
@@ -460,7 +515,7 @@ void loop(){
   
   //All the information for controlling the motor's is available.
   //The refresh rate is 250Hz. That means the esc's need there pulse every 4ms.
-
+  analogWrite(A3, 0);
   while(micros() - loop_timer < 4000);                                      //We wait until 4000us are passed.
   loop_timer = micros();                                                    //Set the timer for the next loop.
 

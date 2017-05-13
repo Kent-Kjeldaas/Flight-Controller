@@ -13,7 +13,7 @@ int pid_max_roll = 400;                    //Maximum output of the PID-controlle
  
 float pid_p_gain_pitch = pid_p_gain_roll;  //Gain setting for the pitch P-controller.
 float pid_i_gain_pitch = pid_i_gain_roll;  //Gain setting for the pitch I-controller.
-float pid_d_gain_pitch = pid_d_gain_roll;  //Gain setting for the pitch D-controller
+float pid_d_gain_pitch = pid_d_gain_roll;  //Gain setting for the pitch D-controller.
 int pid_max_pitch = pid_max_roll;          //Maximum output of the PID-controller (+/-)
  
 float pid_p_gain_yaw = 18.0;                //Gain setting for the pitch P-controller. //4.0
@@ -49,11 +49,11 @@ float pid_i_mem_yaw, pid_yaw_setpoint, gyro_yaw_input, pid_output_yaw, pid_last_
 /////////////////////////////
 // Legger inn Calibration values:
 //////////////////////////////
-int s1 = 1375;
-int s2 = 1500;
-int s3 = 1375;
-int s4 = 1750;
-
+int s1 = 1400;
+int s2 = 1450;
+int s3 = 1400;
+int s4 = 1675;
+ 
 double stick_sensitiviy_pitch = 40;
 double stick_sensitiviy_roll = 40;
 double stick_sensitiviy_yaw = 40;
@@ -68,7 +68,7 @@ bool array_full = false;
 int servo_value;
  
 int number = 0;
-bool debug = true;
+bool debug = false;
  
 void calibrate_servos();
  
@@ -197,30 +197,30 @@ void loop() {
   receiver_input_channel_2 = convert_receiver_channel(2);      //Convert the actual receiver signals for roll to the standard 1000 - 2000us.
   receiver_input_channel_3 = convert_receiver_channel(3);      //Convert the actual receiver signals for throttle to the standard 1000 - 2000us.
   receiver_input_channel_4 = convert_receiver_channel(4);      //Convert the actual receiver signals for yaw to the standard 1000 - 2000us.
-  
+ 
   //receiver_input_channel_1 /= pitchSpeed;
   //receiver_input_channel_2 /= rollSpeed;
   //receiver_input_channel_4 /= yawSpeed;
-  
+ 
   //Let's get the current gyro data
   gyro_signalen(); //Read the gyro output.
   //Get degree per second
   gyro_roll_input = (gyro_roll_input * 0.8) + ((gyro_roll / 57.14286) * 0.2);            //Gyro pid input is deg/sec.
   gyro_pitch_input = (gyro_pitch_input * 0.8) + ((gyro_pitch / 57.14286) * 0.2);         //Gyro pid input is deg/sec.
   gyro_yaw_input = (gyro_yaw_input * 0.8) + ((gyro_yaw / 57.14286) * 0.2);               //Gyro pid input is deg/sec.
-
+ 
   //Add to array by removing the oldest data
   gyro_axis_pitch[oldest_data] = gyro_roll_input;
   gyro_axis_roll[oldest_data] = gyro_pitch_input;
   gyro_axis_yaw[oldest_data] = gyro_yaw_input;
-  
+ 
   oldest_data++;
   if( oldest_data > number_of_samples-1){
     oldest_data = 0;
     array_full = true;
   }
   if(array_full){
-    //get sum 
+    //get sum
     for(int i = 0; i < number_of_samples ; i++){
       gyro_pitch_sum += gyro_axis_pitch[i];
       gyro_roll_sum  += gyro_axis_roll[i];
@@ -231,7 +231,7 @@ void loop() {
     gyro_roll_input /= number_of_samples;
     gyro_yaw_input /= number_of_samples;
   }
-  
+ 
   //For starting the motors: throttle low and yaw left (step 1).
   if (receiver_input_channel_3 < 1050 && receiver_input_channel_4 < 1050)start = 1;
   //When yaw stick is back in the center position start the motors (step 2).
@@ -245,7 +245,7 @@ void loop() {
     pid_i_mem_yaw = 0;
     pid_last_yaw_d_error = 0;
   }
-  
+ 
   //Stopping the motors: throttle low and yaw right.
   if (start == 2 && receiver_input_channel_3 < 1050 && receiver_input_channel_4 > 1950)start = 0;
  
@@ -253,7 +253,7 @@ void loop() {
   //In the case of deviding by 3 the max roll rate is aprox 164 degrees per second ( (500-8)/3 = 164d/s ).
   pid_roll_setpoint = 0;
   //We need a little dead band of 16us for better results.
-  if (receiver_input_channel_1 > 1508)pid_roll_setpoint = (receiver_input_channel_1 - 1508) / stick_sensitiviy_pitch;  // 
+  if (receiver_input_channel_1 > 1508)pid_roll_setpoint = (receiver_input_channel_1 - 1508) / stick_sensitiviy_pitch;  //
   else if (receiver_input_channel_1 < 1492)pid_roll_setpoint = (receiver_input_channel_1 - 1492) / stick_sensitiviy_pitch;
  
   //The PID set point in degrees per second is determined by the pitch receiver input.
@@ -308,31 +308,30 @@ void loop() {
     if (esc_2 > 2000)esc_2 = 2000;                                          //Limit the esc-2 pulse to 2000us.
     if (esc_3 > 2000)esc_3 = 2000;                                          //Limit the esc-3 pulse to 2000us.
     if (esc_4 > 2000)esc_4 = 2000;                                          //Limit the esc-4 pulse to 2000us.
-
-    servo_1 = map(esc_1, 1000, 2000, s1, s1_max); 
-    servo_2 = map(esc_2, 1000, 2000, s2, s2_max);
-    servo_3 = map(esc_3, 1000, 2000, s3, s3_max);
-    servo_4 = map(esc_4, 1000, 2000, s4, s4_max); 
-
-    esc_1 = map(esc_1, 1000, 2000, 1300, 1500);
-    esc_2 = map(esc_2, 1000, 2000, 1300, 1500);
-    esc_3 = map(esc_3, 1000, 2000, 1300, 1500);
-    esc_4 = map(esc_4, 1000, 2000, 1300, 1500);
  
-    //send servo val 
-    servo1.writeMicroseconds(servo_1);
-    servo2.writeMicroseconds(servo_2);
-    servo3.writeMicroseconds(servo_3);
-    servo4.writeMicroseconds(servo_4);
-
+//    servo_1 = map(esc_1, 1000, 2000, s1, s1_max);
+//    servo_2 = map(esc_2, 1000, 2000, s2, s2_max);
+//    servo_3 = map(esc_3, 1000, 2000, s3, s3_max);
+//    servo_4 = map(esc_4, 1000, 2000, s4, s4_max);
+ 
+    esc_1 = map(esc_1, 1000, 2000, 1000, 1500);
+    esc_2 = map(esc_2, 1000, 2000, 1000, 1500);
+    esc_3 = map(esc_3, 1000, 2000, 1000, 1500);
+    esc_4 = map(esc_4, 1000, 2000, 1000, 1500);
+ 
+    //send servo val
+    servo1.writeMicroseconds(s1);
+    servo2.writeMicroseconds(s2);
+    servo3.writeMicroseconds(s3);
+    servo4.writeMicroseconds(s4);
+ 
     if (debug){
-      Serial.print(" ");
-      Serial.print(gyro_roll_input);
-      Serial.print(" ");
-      Serial.print(gyro_pitch_input);
-      Serial.print(" ");
-      Serial.println(gyro_yaw_input);
-      
+//      Serial.print(pid_output_pitch); //high
+//      Serial.print(" ");
+//      Serial.print(pid_output_roll); //low
+//      Serial.print(" ");
+//      Serial.println(pid_output_yaw); //nothing
+//      
       /*
       Serial.print(pid_output_pitch); //high
       Serial.print(" ");
@@ -340,7 +339,7 @@ void loop() {
       Serial.print(" ");
       Serial.println(pid_output_yaw); //nothing
      
-      
+     
       Serial.print(number);
       number++;
       Serial.print(" ");
@@ -598,7 +597,7 @@ void set_gyro_registers() {
     Wire.beginTransmission(gyro_address);                        //Start communication with the address found during search
     Wire.write(0x1A);                                            //We want to write to the GYRO_CONFIG register (1B hex)
     Wire.write(0x03);                                            //Set the register bits as 00001000 (500dps full scale)
-    Wire.endTransmission();                                      //End the transmission with the gyro++++++++++++++++
+    Wire.endTransmission();                                      //End the transmission with the gyro
   }
   //Setup the L3G4200D
   if (eeprom_data[31] == 2) {

@@ -49,10 +49,10 @@ float pid_i_mem_yaw, pid_yaw_setpoint, gyro_yaw_input, pid_output_yaw, pid_last_
 /////////////////////////////
 // Legger inn Calibration values:
 //////////////////////////////
-int s1 = 1525;
-int s2 = 1550;
-int s3 = 1500;
-int s4 = 1450;
+int s1 = 1500;
+int s2 = 1400;
+int s3 = 1600;
+int s4 = 1500;
 
 double stick_sensitiviy_pitch = 40;
 double stick_sensitiviy_roll = 40;
@@ -69,7 +69,7 @@ int servo_value;
  
 int number = 0;
 bool debug = false;
-bool variable_pitch = true;
+bool variable_pitch = false;
  
 void calibrate_servos();
  

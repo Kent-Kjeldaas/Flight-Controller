@@ -15,7 +15,9 @@ from threading import Thread
 
 logging.basicConfig(file='test.log', level=logging.DEBUG, format='%(asctime)s:%(levelname)s:%(message)s')
 
-#SETTINGS:
+#######################################################################################################################################
+##CONTROL SYSTEM
+#######################################################################################################################################
 kp_X = 0.2 #Limit desired velocity
 kp_Y = 0.2 #Limit desired velocity
 kp_Z = 0.06 #Limit desired velocity
@@ -33,14 +35,17 @@ maxRoll = 5
 thrust = 1390
 maxThrust = 1590
 minThrust = 1190
+#size of room, 5x3x2
 LimZ_max = 2000 #200cm
 LimZ_min = 350 #35cm
-LimX_max = 1000
-LimX_min = -1000
-LimY_max = 1000
-LimY_min = -1000
+LimX_max = 1690
+LimX_min = -1690
+LimY_max = 2500 
+LimY_min = -2795
 
-#VARIABLES:
+#######################################################################################################################################
+##VARIABLES
+#######################################################################################################################################
 lostContact = 0
 mass = 1.856
 gravity = 9.81
@@ -61,8 +66,9 @@ angularX = .0
 angularY = .0
 angularZ = .0
 
-#Check connection with Qualisys:
-
+#######################################################################################################################################
+##UPDATING QUALISYS INFORMATION
+#######################################################################################################################################
 def UpdateQualInfo():
     global currentX
     global currentY
@@ -84,6 +90,10 @@ def UpdateQualInfo():
                 angularZ = qt.getBody(0)['angular_z']
                 logging.debug("x, y, z, phi, theta, psi:" + linear_x + " " + linear_y + " " + linear_z + " " + angular_x + " " + angular_y + " " + angular_z)
 
+
+#######################################################################################################################################
+##MAIN FUNCTION
+#######################################################################################################################################
 def Compute():
     global currentX
     global currentY
@@ -130,8 +140,35 @@ def Compute():
         start = True
     #Receive Data
     logging.debug("Starting given true - true")
+
+    for i in range(0, 3):
+        thrust = 1000
+        yaw = 1000
+        commands = [str(roll), str(pitch), str(yaw), str(thrust), star]
+        commandString = ','.join(commands)
+        sock.send(commandString)
+        logging.debug("Ready") # ready, set, go
+        time.sleep(0.2)
+    
+
+    for i in range(0, 3):
+        thrust = 1000
+        yaw = 1500 #centerposition
+        commands = [str(roll), str(pitch), str(yaw), str(thrust), star]
+        commandString = ','.join(commands)
+        sock.send(commandString)
+        if(i < 2):
+            logging.debug("Set")
+        else: 
+            logging.debug("Go!")
+            active = True
+        time.sleep(0.2)
+
     lastTime = time.time()*1000
     timer = time.time()
+#######################################################################################################################################
+##OUTER LOOP
+#######################################################################################################################################
     try:
         while (active and start)
             '''
@@ -154,7 +191,8 @@ def Compute():
                 currentZ = lastZ
                 if (lostContact >= 5):
                     # Landing Function ??
-                    thrust = 0
+                    thrust = 1000
+                    yaw = 1994
                     commands = [str(roll), str(pitch), str(yaw), str(thrust), star]
                     commandString = ','.join(commands)
                     sock.send(commandString)
@@ -166,7 +204,8 @@ def Compute():
                 # Stop if time is greater than thirty seconds (Not really needed? Should be done on Quad?)
                 if (timer > time.time()+30):
                     # Landing Function ??
-                    thrust = 0
+                    thrust = 1000
+                    yaw = 1994
                     commands = [str(roll), str(pitch), str(yaw), str(thrust), star]
                     commandString = ','.join(commands)
                     sock.send(commandString)
@@ -176,13 +215,18 @@ def Compute():
                 # check if out of scope
                 if (currentZ > LimZ_max or currentZ < -LimZ_min or currentX > LimX_max or currentX < LimX_min or currentY > LimY_max or currentY < LimY_min): 
                     # Landing Function ??
-                    thrust = 0
+                    thrust = 1000
+                    yaw = 1994
                     commands = [str(roll), str(pitch), str(yaw), str(thrust), star]
                     commandString = ','.join(commands)
                     sock.send(commandString)
                     logging.warning("Out Of Scope")
                     active = False
                     break
+
+#######################################################################################################################################
+##CONTROL SYSTEM
+#######################################################################################################################################
      
             #For Z-axis: adjust thrust and pitch/roll angle?
             #Compute
@@ -200,6 +244,7 @@ def Compute():
                     Velocity_y = 0
                     Velocity_z = 0
             lastTime = currentTime 
+
      
             #Save new last position
             lastX = currentX
@@ -247,10 +292,7 @@ def Compute():
                     thrust = minThrust 
      
             #Send roll, pitch, yaw, throttle
-            roll = 0
-            pitch = 0
-            yaw = 0
-            if(thrust > 1200 and thrust < 2000):
+            if(thrust > 1000 and thrust < 2000):
                thrust = int(thrust)
                commands = [str(roll), str(pitch), str(yaw), str(thrust), star]
                commandString = ','.join(commands)
@@ -270,9 +312,12 @@ def Compute():
         logging.warning("Sending data: " + roll + " " + pitch + " " + yaw + " " + thrust
         logging.warning("EXCEPTION: TERMINATE")
         time.sleep(0.3)
-    
+
 
 logging.debug("Starting Qual Update Function")
+#######################################################################################################################################
+##START FUNCTIONS
+#######################################################################################################################################
 
 t1 = Thread(target=UpdateQualInfo)
 t1.start()

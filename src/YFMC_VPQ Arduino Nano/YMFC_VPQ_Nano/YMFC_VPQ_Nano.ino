@@ -49,10 +49,10 @@ float pid_i_mem_yaw, pid_yaw_setpoint, gyro_yaw_input, pid_output_yaw, pid_last_
 /////////////////////////////
 // Legger inn Calibration values:
 //////////////////////////////
-int s1 = 1500;
-int s2 = 1500;
+int s1 = 1525;
+int s2 = 1550;
 int s3 = 1500;
-int s4 = 1500;
+int s4 = 1450;
 
 double stick_sensitiviy_pitch = 40;
 double stick_sensitiviy_roll = 40;
@@ -69,6 +69,7 @@ int servo_value;
  
 int number = 0;
 bool debug = false;
+bool variable_pitch = true;
  
 void calibrate_servos();
  
@@ -183,6 +184,12 @@ void setup() {
  
   //Arduino (Atmega) pins default to inputs, so they don't need to be explicitly declared as inputs.
   //Configure digital poort 29, 28, 27, 26.
+  if(variable_pitch){
+    s1_max = s1 - s_inc;
+    s2_max = s2 + s_inc;
+    s3_max = s3 - s_inc;
+    s4_max = s4 + s_inc;
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Main program loop
@@ -305,21 +312,32 @@ void loop() {
     if (esc_3 > 2000)esc_3 = 2000;                                          //Limit the esc-3 pulse to 2000us.
     if (esc_4 > 2000)esc_4 = 2000;                                          //Limit the esc-4 pulse to 2000us.
 
-    //servo_1 = map(esc_1, 1000, 2000, s1, s1_max); 
-    //servo_2 = map(esc_2, 1000, 2000, s2, s2_max);
-    //servo_3 = map(esc_3, 1000, 2000, s3, s3_max);
-    //servo_4 = map(esc_4, 1000, 2000, s4, s4_max); 
+    if(variable_pitch){
+      servo_1 = map(esc_1, 1000, 2000, s1, s1_max); 
+      servo_2 = map(esc_2, 1000, 2000, s2, s2_max);
+      servo_3 = map(esc_3, 1000, 2000, s3, s3_max);
+      servo_4 = map(esc_4, 1000, 2000, s4, s4_max); 
+      
+    }
 
-    esc_1 = map(esc_1, 1200, 2000, 1300, 1500);
-    esc_2 = map(esc_2, 1200, 2000, 1300, 1500);
-    esc_3 = map(esc_3, 1200, 2000, 1300, 1500);
-    esc_4 = map(esc_4, 1200, 2000, 1300, 1500);
- 
-    //send servo val 
-    servo1.writeMicroseconds(servo_1);
-    servo2.writeMicroseconds(servo_2);
-    servo3.writeMicroseconds(servo_3);
-    servo4.writeMicroseconds(servo_4);
+    esc_1 = map(esc_1, 1200, 2000, 1300, 1550);
+    esc_2 = map(esc_2, 1200, 2000, 1300, 1550);
+    esc_3 = map(esc_3, 1200, 2000, 1300, 1550);
+    esc_4 = map(esc_4, 1200, 2000, 1300, 1550);
+    
+    if(variable_pitch){
+      //send servo val 
+      servo1.writeMicroseconds(servo_1);
+      servo2.writeMicroseconds(servo_2);
+      servo3.writeMicroseconds(servo_3);
+      servo4.writeMicroseconds(servo_4);
+    }
+    else{
+      servo1.writeMicroseconds(s1);
+      servo2.writeMicroseconds(s2);
+      servo3.writeMicroseconds(s3);
+      servo4.writeMicroseconds(s4);
+    }
 
     if (debug){
       Serial.print(" ");

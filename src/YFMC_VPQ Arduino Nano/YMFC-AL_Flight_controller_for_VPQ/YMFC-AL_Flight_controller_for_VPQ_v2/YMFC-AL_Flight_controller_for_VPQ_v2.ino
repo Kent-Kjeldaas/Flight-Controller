@@ -6,7 +6,7 @@
 //PID gain and limit settings
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 float pid_p_gain_roll = 11.5;              //Gain setting for the roll P-controller (1.3) //(11.5 perf for max)
-float pid_i_gain_roll = 0.3;              //Gain setting for the roll I-controller (0.05) //more? or less?
+float pid_i_gain_roll = 0.4;              //Gain setting for the roll I-controller (0.05) //more? or less?
 float pid_d_gain_roll = 10;                //Gain setting for the roll D-controller (15)
 int pid_max_roll = 400;                    //Maximum output of the PID-controller (+/-)
  
@@ -58,10 +58,10 @@ boolean gyro_angles_set;
 /////////////////////////////
 // Calibration values
 //////////////////////////////
-int s1 = 1375;
+int s1 = 1500;
 int s2 = 1500;
-int s3 = 1375;
-int s4 = 1750;
+int s3 = 1500;
+int s4 = 1500;
  
 int s_inc = 400;
 int s1_max, s2_max, s3_max, s4_max;
@@ -397,10 +397,10 @@ void loop(){
 
   if (start == 2){                                                          //The motors are started.
     if (throttle > 1800) throttle = 1800;                                   //We need some room to keep full control at full throttle.
-    esc_1 = (throttle - pid_output_pitch + pid_output_roll - pid_output_yaw)*1.044; //Calculate the pulse for esc 1 (front-right - CCW)
-    esc_2 = (throttle + pid_output_pitch + pid_output_roll + pid_output_yaw)*1.046; //Calculate the pulse for esc 2 (rear-right - CW)
-    esc_3 = (throttle + pid_output_pitch - pid_output_roll - pid_output_yaw)*0.986; //Calculate the pulse for esc 3 (rear-left - CCW)
-    esc_4 = (throttle - pid_output_pitch - pid_output_roll + pid_output_yaw)*1.022; //Calculate the pulse for esc 4 (front-left - CW)
+    esc_1 = (throttle - pid_output_pitch + pid_output_roll - pid_output_yaw); //*1.044; //Calculate the pulse for esc 1 (front-right - CCW)
+    esc_2 = (throttle + pid_output_pitch + pid_output_roll + pid_output_yaw); //*1.046; //Calculate the pulse for esc 2 (rear-right - CW)
+    esc_3 = (throttle + pid_output_pitch - pid_output_roll - pid_output_yaw); //*0.986; //Calculate the pulse for esc 3 (rear-left - CCW)
+    esc_4 = (throttle - pid_output_pitch - pid_output_roll + pid_output_yaw); //*1.022; //Calculate the pulse for esc 4 (front-left - CW)
     /*
     if (battery_voltage < 1240 && battery_voltage > 800){                   //Is the battery connected?
       esc_1 += esc_1 * ((1240 - battery_voltage)/(float)3500);              //Compensate the esc-1 pulse for voltage drop.

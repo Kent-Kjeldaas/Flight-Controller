@@ -49,17 +49,14 @@ float pid_i_mem_yaw, pid_yaw_setpoint, gyro_yaw_input, pid_output_yaw, pid_last_
 /////////////////////////////
 // Legger inn Calibration values:
 //////////////////////////////
-int s1 = 1400;
-int s2 = 1450;
-int s3 = 1400;
-int s4 = 1675;
+int s1 = 1700;
+int s2 = 1250;
+int s3 = 1800;
+int s4 = 1200;
  
 double stick_sensitiviy_pitch = 40;
 double stick_sensitiviy_roll = 40;
 double stick_sensitiviy_yaw = 40;
- 
-int s_inc = 400;
-int s1_max, s2_max, s3_max, s4_max;
  
 unsigned long tid, tid2;
 char data_in;
@@ -174,11 +171,6 @@ void setup() {
   servo4.writeMicroseconds(s4);
  
   calibrate_servos();
- 
-  s1_max = s1 - s_inc;
-  s2_max = s2 + s_inc;
-  s3_max = s3 - s_inc;
-  s4_max = s4 + s_inc;
  
   servo1.writeMicroseconds(s1);
   servo2.writeMicroseconds(s2);
@@ -299,10 +291,10 @@ void loop() {
       esc_4 += esc_4 * ((1240 - battery_voltage) / (float)3500);            //Compensate the esc-4 pulse for voltage drop.
       }*/
  
-    if (esc_1 < 1000) esc_1 = 1000;                                         //Keep the motors running.
-    if (esc_2 < 1000) esc_2 = 1000;                                         //Keep the motors running.
-    if (esc_3 < 1000) esc_3 = 1000;                                         //Keep the motors running.
-    if (esc_4 < 1000) esc_4 = 1000;                                         //Keep the motors running.
+    if (esc_1 < 1200) esc_1 = 1200;                                         //Keep the motors running.
+    if (esc_2 < 1200) esc_2 = 1200;                                         //Keep the motors running.
+    if (esc_3 < 1200) esc_3 = 1200;                                         //Keep the motors running.
+    if (esc_4 < 1200) esc_4 = 1200;                                         //Keep the motors running.
  
     if (esc_1 > 2000)esc_1 = 2000;                                          //Limit the esc-1 pulse to 2000us.
     if (esc_2 > 2000)esc_2 = 2000;                                          //Limit the esc-2 pulse to 2000us.
@@ -314,10 +306,10 @@ void loop() {
 //    servo_3 = map(esc_3, 1000, 2000, s3, s3_max);
 //    servo_4 = map(esc_4, 1000, 2000, s4, s4_max);
  
-    esc_1 = map(esc_1, 1000, 2000, 1000, 1500);
-    esc_2 = map(esc_2, 1000, 2000, 1000, 1500);
-    esc_3 = map(esc_3, 1000, 2000, 1000, 1500);
-    esc_4 = map(esc_4, 1000, 2000, 1000, 1500);
+    esc_1 = map(esc_1, 1200, 2000, 1300, 1500);
+    esc_2 = map(esc_2, 1200, 2000, 1300, 1500);
+    esc_3 = map(esc_3, 1200, 2000, 1300, 1500);
+    esc_4 = map(esc_4, 1200, 2000, 1300, 1500);
  
     //send servo val
     servo1.writeMicroseconds(s1);

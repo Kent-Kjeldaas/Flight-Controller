@@ -49,10 +49,10 @@ float pid_i_mem_yaw, pid_yaw_setpoint, gyro_yaw_input, pid_output_yaw, pid_last_
 /////////////////////////////
 // Legger inn Calibration values:
 //////////////////////////////
-int s1 = 1375;
+int s1 = 1500;
 int s2 = 1500;
-int s3 = 1375;
-int s4 = 1750;
+int s3 = 1500;
+int s4 = 1500;
 
 double stick_sensitiviy_pitch = 40;
 double stick_sensitiviy_roll = 40;
@@ -68,7 +68,7 @@ bool array_full = false;
 int servo_value;
  
 int number = 0;
-bool debug = true;
+bool debug = false;
  
 void calibrate_servos();
  
@@ -175,10 +175,6 @@ void setup() {
  
   calibrate_servos();
  
-  s1_max = s1 - s_inc;
-  s2_max = s2 + s_inc;
-  s3_max = s3 - s_inc;
-  s4_max = s4 + s_inc;
  
   servo1.writeMicroseconds(s1);
   servo2.writeMicroseconds(s2);
@@ -299,25 +295,25 @@ void loop() {
       esc_4 += esc_4 * ((1240 - battery_voltage) / (float)3500);            //Compensate the esc-4 pulse for voltage drop.
       }*/
  
-    if (esc_1 < 1000) esc_1 = 1000;                                         //Keep the motors running.
-    if (esc_2 < 1000) esc_2 = 1000;                                         //Keep the motors running.
-    if (esc_3 < 1000) esc_3 = 1000;                                         //Keep the motors running.
-    if (esc_4 < 1000) esc_4 = 1000;                                         //Keep the motors running.
+    if (esc_1 < 1200) esc_1 = 1200;                                         //Keep the motors running.
+    if (esc_2 < 1200) esc_2 = 1200;                                         //Keep the motors running.
+    if (esc_3 < 1200) esc_3 = 1200;                                         //Keep the motors running.
+    if (esc_4 < 1200) esc_4 = 1200;                                         //Keep the motors running.
  
     if (esc_1 > 2000)esc_1 = 2000;                                          //Limit the esc-1 pulse to 2000us.
     if (esc_2 > 2000)esc_2 = 2000;                                          //Limit the esc-2 pulse to 2000us.
     if (esc_3 > 2000)esc_3 = 2000;                                          //Limit the esc-3 pulse to 2000us.
     if (esc_4 > 2000)esc_4 = 2000;                                          //Limit the esc-4 pulse to 2000us.
 
-    servo_1 = map(esc_1, 1000, 2000, s1, s1_max); 
-    servo_2 = map(esc_2, 1000, 2000, s2, s2_max);
-    servo_3 = map(esc_3, 1000, 2000, s3, s3_max);
-    servo_4 = map(esc_4, 1000, 2000, s4, s4_max); 
+    //servo_1 = map(esc_1, 1000, 2000, s1, s1_max); 
+    //servo_2 = map(esc_2, 1000, 2000, s2, s2_max);
+    //servo_3 = map(esc_3, 1000, 2000, s3, s3_max);
+    //servo_4 = map(esc_4, 1000, 2000, s4, s4_max); 
 
-    esc_1 = map(esc_1, 1000, 2000, 1300, 1500);
-    esc_2 = map(esc_2, 1000, 2000, 1300, 1500);
-    esc_3 = map(esc_3, 1000, 2000, 1300, 1500);
-    esc_4 = map(esc_4, 1000, 2000, 1300, 1500);
+    esc_1 = map(esc_1, 1200, 2000, 1300, 1500);
+    esc_2 = map(esc_2, 1200, 2000, 1300, 1500);
+    esc_3 = map(esc_3, 1200, 2000, 1300, 1500);
+    esc_4 = map(esc_4, 1200, 2000, 1300, 1500);
  
     //send servo val 
     servo1.writeMicroseconds(servo_1);

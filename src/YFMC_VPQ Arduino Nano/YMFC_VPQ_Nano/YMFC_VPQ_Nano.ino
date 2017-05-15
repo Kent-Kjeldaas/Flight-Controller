@@ -6,9 +6,9 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //PID gain and limit settings
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-float pid_p_gain_roll = 11.5;              //Gain setting for the roll P-controller (1.3) //(11.5 perf for max)
-float pid_i_gain_roll = 0.03;              //Gain setting for the roll I-controller (0.05)
-float pid_d_gain_roll = 10;                //Gain setting for the roll D-controller (15)
+float pid_p_gain_roll = 11.5;              //Gain setting for the roll P-controller (11.5 perf for max) (critical RPM: 3.5)
+float pid_i_gain_roll = 0.03;              //Gain setting for the roll I-controller (0.03) (critical RPM: 0.02)
+float pid_d_gain_roll = 10;                //Gain setting for the roll D-controller (10) (critical RPM: 7)
 int pid_max_roll = 400;                    //Maximum output of the PID-controller (+/-)
  
 float pid_p_gain_pitch = pid_p_gain_roll;  //Gain setting for the pitch P-controller.
@@ -16,8 +16,8 @@ float pid_i_gain_pitch = pid_i_gain_roll;  //Gain setting for the pitch I-contro
 float pid_d_gain_pitch = pid_d_gain_roll;  //Gain setting for the pitch D-controller
 int pid_max_pitch = pid_max_roll;          //Maximum output of the PID-controller (+/-)
  
-float pid_p_gain_yaw = 18.0;                //Gain setting for the pitch P-controller. //4.0
-float pid_i_gain_yaw = 0.04;            //Gain setting for the pitch I-controller. //0.02
+float pid_p_gain_yaw = 18.0;                //Gain setting for the pitch P-controller. //18.0
+float pid_i_gain_yaw = 0.04;            //Gain setting for the pitch I-controller. //0.04
 float pid_d_gain_yaw = 0.0;                //Gain setting for the pitch D-controller.
 int pid_max_yaw = 400;                     //Maximum output of the PID-controller (+/-)
  
@@ -51,17 +51,17 @@ float pid_i_mem_yaw, pid_yaw_setpoint, gyro_yaw_input, pid_output_yaw, pid_last_
 //////////////////////////////
 int s1 = 1500;
 int s2 = 1400;
-int s3 = 1600;
-int s4 = 1500;
+int s3 = 1675;
+int s4 = 1450;
 
-double stick_sensitiviy_pitch = 40;
-double stick_sensitiviy_roll = 40;
-double stick_sensitiviy_yaw = 40;
+double stick_sensitiviy_pitch = 60;
+double stick_sensitiviy_roll = 60;
+double stick_sensitiviy_yaw = 60;
  
 int s_inc = 400;
 int s1_max, s2_max, s3_max, s4_max;
  
-unsigned long tid, tid2;
+unsigned long time_1, time_2;
 char data_in;
 bool cal = false;
 bool array_full = false;
@@ -69,7 +69,7 @@ int servo_value;
  
 int number = 0;
 bool debug = false;
-bool variable_pitch = false;
+bool variable_pitch = true;
  
 void calibrate_servos();
  
@@ -313,19 +313,16 @@ void loop() {
     if (esc_4 > 2000)esc_4 = 2000;                                          //Limit the esc-4 pulse to 2000us.
 
     if(variable_pitch){
-      servo_1 = map(esc_1, 1000, 2000, s1, s1_max); 
-      servo_2 = map(esc_2, 1000, 2000, s2, s2_max);
-      servo_3 = map(esc_3, 1000, 2000, s3, s3_max);
-      servo_4 = map(esc_4, 1000, 2000, s4, s4_max); 
+      servo_1 = map(esc_1, 1200, 2000, s1, s1_max); 
+      servo_2 = map(esc_2, 1200, 2000, s2, s2_max);
+      servo_3 = map(esc_3, 1200, 2000, s3, s3_max);
+      servo_4 = map(esc_4, 1200, 2000, s4, s4_max); 
       
-    }
-
-    esc_1 = map(esc_1, 1200, 2000, 1300, 1550);
-    esc_2 = map(esc_2, 1200, 2000, 1300, 1550);
-    esc_3 = map(esc_3, 1200, 2000, 1300, 1550);
-    esc_4 = map(esc_4, 1200, 2000, 1300, 1550);
-    
-    if(variable_pitch){
+      esc_1 = map(esc_1, 1200, 2000, 1300, 1550);
+      esc_2 = map(esc_2, 1200, 2000, 1300, 1550);
+      esc_3 = map(esc_3, 1200, 2000, 1300, 1550);
+      esc_4 = map(esc_4, 1200, 2000, 1300, 1550);
+      
       //send servo val 
       servo1.writeMicroseconds(servo_1);
       servo2.writeMicroseconds(servo_2);
@@ -333,6 +330,11 @@ void loop() {
       servo4.writeMicroseconds(servo_4);
     }
     else{
+      esc_1 = map(esc_1, 1200, 2000, 1200, 1550);
+      esc_2 = map(esc_2, 1200, 2000, 1200, 1550);
+      esc_3 = map(esc_3, 1200, 2000, 1200, 1550);
+      esc_4 = map(esc_4, 1200, 2000, 1200, 1550);
+      
       servo1.writeMicroseconds(s1);
       servo2.writeMicroseconds(s2);
       servo3.writeMicroseconds(s3);
@@ -669,19 +671,19 @@ void set_gyro_registers() {
 // Calibration of Servos
 /////////////////////////////////////////////
 void calibrate_servos () {
-  tid = millis();
+  time_1 = millis();
  
   int count_motor = 1;
-  /*
-     Vi vil hente inn info fra serial monitor og justere servoen derifra
-     Startvinkelen skal lagres som "null-vinkel" og overføres via EEPROM
-     Når vi skriver OK i Serial monitor skal vi hoppe videre til neste motor
-     Funksjonen skal gå igjennom kalibrering for alle fire motorene.
+  /* We want to get information from the serial monitor and adjust the 
+     propeller pitch from the mechanical positioned angle. The start 
+     angle will be saved as zero-pitch. When we type 0 in the serial 
+     monitor the next servo should be adjusted. The function should go
+     through calibration for all of the four motors.
   */
-  Serial.println("Skriv inn '*' for å komme til kalibrering");
+  Serial.println("Enter '*' to calibrate");
   if (!cal) {
-    while (tid + 7000 > tid2) {
-      tid2 = millis();
+    while (time_1 + 7000 > time_2) {
+      time_2 = millis();
       if (Serial.available()) {
         data_in = Serial.read();
         if (data_in == '*') {
@@ -691,13 +693,13 @@ void calibrate_servos () {
     }
   }
   if (cal) {
-    Serial.println("Velkommen til kalllllibrering");
+    Serial.println("Welcome to propeller pitch calibration");
     delay(2000);
-    Serial.println("Start med motor 1: Skriv '+' for aa oeke vinkelen og '-' for aa minke den... Skriv OK naar du vil gaa til neste motor");
+    Serial.println("Write '7' to adjust to a specific number or write '1' to increase and '2' to decrease. Write '0' to confirm and go to next servo");
     while (count_motor < 5) {
  
       servo_value = s1;
-      Serial.println("Sett servo1 til null-pitch og skriv OK naar du er ferdig med servo 1");
+      Serial.println("Set servo to zero pitch");
       while (count_motor == 1) {
         if (Serial.available()) {
           data_in = Serial.read();
@@ -709,17 +711,17 @@ void calibrate_servos () {
             if (data_in == '1') {
               servo_value +=10;
               servo1.writeMicroseconds(servo_value);
-              Serial.print("Servoverdi er nå : ");
+              Serial.print("Servo value is now : " );
               Serial.println(servo_value);
             }
             else if (data_in == '2') {
               servo_value -=10;
               servo1.writeMicroseconds(servo_value);
-              Serial.print("Servoverdi er nå : " );
+              Serial.print("Servo value is now : " );
               Serial.println(servo_value);
             }
             else if (data_in == '7') {
-              Serial.println("Skriv inn Microseconds du vil sende og trykk enter: ");
+              Serial.println("Write microseconds");
               String PWM;
               while (int k = 1) {
                 if (Serial.available()) {
@@ -730,26 +732,24 @@ void calibrate_servos () {
                   break;
                 }
               }
-              Serial.print("Servoverdi er nå : ");
+              Serial.print("Servo value is now : ");
               Serial.println(servo_value);
             }
             else {
-              Serial.println("Ikke tillat");
+              Serial.println("Not allowed");
             }
           }
- 
         }
  
       }
-      Serial.print("Null-pitchvinkelen til servo 1 er satt til: ");
+      Serial.print("Zero-pitch angle for servo 1 is: ");
       Serial.println(s1);
  
       servo_value = s2;
-      Serial.println("Sett servo2 til null-pitch og skriv OK når du er ferdig med servo 2");
-      while (count_motor == 2) {
+      Serial.println("Set servo to zero pitch");
+      while (count_motor == 1) {
         if (Serial.available()) {
           data_in = Serial.read();
- 
           if (data_in == '0') {
             s2 = servo_value;
             count_motor++;
@@ -757,49 +757,47 @@ void calibrate_servos () {
           else {
             if (data_in == '1') {
               servo_value +=10;
-              servo2.writeMicroseconds(servo_value);
-              Serial.print("Servoverdi er nå : " );
+              servo1.writeMicroseconds(servo_value);
+              Serial.print("Servo value is now : " );
               Serial.println(servo_value);
             }
             else if (data_in == '2') {
               servo_value -=10;
-              servo2.writeMicroseconds(servo_value);
-              Serial.print("Servoverdi er nå : " );
+              servo1.writeMicroseconds(servo_value);
+              Serial.print("Servo value is now : " );
               Serial.println(servo_value);
             }
- 
             else if (data_in == '7') {
-              Serial.println("Skriv inn Microseconds du vil sende og trykk enter: ");
+              Serial.println("Write microseconds");
               String PWM;
               while (int k = 1) {
                 if (Serial.available()) {
                   PWM = Serial.readString();
                   servo_value = PWM.toInt();
-                  servo2.writeMicroseconds(servo_value);
+                  servo1.writeMicroseconds(servo_value);
                   k = 0;
                   break;
                 }
               }
-              Serial.print("Servoverdi er nå : ");
+              Serial.print("Servo value is now : ");
               Serial.println(servo_value);
             }
- 
             else {
-              Serial.println("Ikke tillat");
+              Serial.println("Not allowed");
             }
           }
         }
+ 
       }
-      Serial.print("Null-pitchvinkelen til servo 2 er satt til: ");
+      Serial.print("Zero-pitch angle for servo 2 is: ");
       Serial.println(s2);
  
  
       servo_value = s3;
-      Serial.println("Sett servo3 til null-pitch og skriv OK når du er ferdig med servo 3");
-      while (count_motor == 3) {
+      Serial.println("Set servo to zero pitch");
+      while (count_motor == 1) {
         if (Serial.available()) {
           data_in = Serial.read();
- 
           if (data_in == '0') {
             s3 = servo_value;
             count_motor++;
@@ -807,50 +805,47 @@ void calibrate_servos () {
           else {
             if (data_in == '1') {
               servo_value +=10;
-              servo3.writeMicroseconds(servo_value);
-              Serial.print("Servoverdi er nå : " );
+              servo1.writeMicroseconds(servo_value);
+              Serial.print("Servo value is now : " );
               Serial.println(servo_value);
             }
             else if (data_in == '2') {
               servo_value -=10;
-              servo3.writeMicroseconds(servo_value);
-              Serial.print("Servoverdi er nå : " );
+              servo1.writeMicroseconds(servo_value);
+              Serial.print("Servo value is now : " );
               Serial.println(servo_value);
             }
- 
             else if (data_in == '7') {
-              Serial.println("Skriv inn Microseconds du vil sende og trykk enter: ");
+              Serial.println("Write microseconds");
               String PWM;
               while (int k = 1) {
                 if (Serial.available()) {
                   PWM = Serial.readString();
                   servo_value = PWM.toInt();
-                  servo3.writeMicroseconds(servo_value);
+                  servo1.writeMicroseconds(servo_value);
                   k = 0;
                   break;
                 }
               }
-              Serial.print("Servoverdi er nå : ");
+              Serial.print("Servo value is now : ");
               Serial.println(servo_value);
             }
- 
             else {
-              Serial.println("Ikke tillat");
+              Serial.println("Not allowed");
             }
           }
         }
+ 
       }
-      Serial.print("Null-pitchvinkelen til servo 3 er satt til: ");
+      Serial.print("Zero-pitch angle for servo 3 is: ");
       Serial.println(s3);
  
  
- 
       servo_value = s4;
-      Serial.println("Sett servo4 til null-pitch og skriv OK naar du er ferdig med servo 4");
-      while (count_motor == 4) {
+      Serial.println("Set servo to zero pitch");
+      while (count_motor == 1) {
         if (Serial.available()) {
           data_in = Serial.read();
- 
           if (data_in == '0') {
             s4 = servo_value;
             count_motor++;
@@ -858,45 +853,44 @@ void calibrate_servos () {
           else {
             if (data_in == '1') {
               servo_value +=10;
-              servo4.writeMicroseconds(servo_value);
-              Serial.print("Servoverdi er nå : " );
+              servo1.writeMicroseconds(servo_value);
+              Serial.print("Servo value is now : " );
               Serial.println(servo_value);
             }
             else if (data_in == '2') {
               servo_value -=10;
-              servo4.writeMicroseconds(servo_value);
-              Serial.print("Servoverdi er nå : " );
+              servo1.writeMicroseconds(servo_value);
+              Serial.print("Servo value is now : " );
               Serial.println(servo_value);
             }
- 
             else if (data_in == '7') {
-              Serial.println("Skriv inn Microseconds du vil sende og trykk enter: ");
+              Serial.println("Write microseconds");
               String PWM;
               while (int k = 1) {
                 if (Serial.available()) {
                   PWM = Serial.readString();
                   servo_value = PWM.toInt();
-                  servo4.writeMicroseconds(servo_value);
+                  servo1.writeMicroseconds(servo_value);
                   k = 0;
                   break;
                 }
               }
-              Serial.print("Servoverdi er nå : ");
+              Serial.print("Servo value is now : ");
               Serial.println(servo_value);
             }
- 
             else {
-              Serial.println("Ikke tillat");
+              Serial.println("Not allowed");
             }
           }
+ 
         }
+ 
       }
-      Serial.print("Null-pitchvinkelen til servo 4 er satt til: ");
+      Serial.print("Zero-pitch angle for servo 4 is: ");
       Serial.println(s4);
  
+    Serial.println("Calibration complete!");
     }
- 
-    Serial.println("Kalibræææring av servoer skal nå være fullført!");
-  }
   Serial.println("Done");
+  }
 }

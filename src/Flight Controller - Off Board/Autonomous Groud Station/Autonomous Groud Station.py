@@ -27,14 +27,14 @@ desiredX = 0.0
 desiredY = 0.0
 desiredZ = 750
 pitch = 0.0
-minPitch = -5
-maxPitch = 5
+minPitch = 1250
+maxPitch = 1750
 roll = 0.0
-minRoll = -5
-maxRoll = 5
+minRoll = 1250
+maxRoll = 1750
 thrust = 1390
-maxThrust = 1590
-minThrust = 1190
+maxThrust = 1550
+minThrust = 1300
 #size of room, 5x3x2
 LimZ_max = 2000 #200cm
 LimZ_min = 350 #35cm
@@ -112,7 +112,7 @@ def Compute():
     lastY = currentY
     lastZ = currentZ
 
-    #sufficent for now, need to change later..
+    #sufficent for now, need to be changed later..
     desiredX = currentX
     desiredY = currentY
 
@@ -202,7 +202,7 @@ def Compute():
             else:
                 lostContact = 0
                 # Stop if time is greater than thirty seconds (Not really needed? Should be done on Quad?)
-                if (timer > time.time()+30):
+                if (timer > time.time()+15):
                     # Landing Function ??
                     thrust = 1000
                     yaw = 1994

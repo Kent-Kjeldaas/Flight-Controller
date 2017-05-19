@@ -6,7 +6,7 @@
 //PID gain and limit settings
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 float pid_p_gain_roll = 11.5;              //Gain setting for the roll P-controller (1.3) //(11.5 perf for max)
-float pid_i_gain_roll = 0.4;              //Gain setting for the roll I-controller (0.05) //more? or less?
+float pid_i_gain_roll = 0.03;              //Gain setting for the roll I-controller (0.05) //more? or less?
 float pid_d_gain_roll = 10;                //Gain setting for the roll D-controller (15)
 int pid_max_roll = 400;                    //Maximum output of the PID-controller (+/-)
  
@@ -59,9 +59,9 @@ boolean gyro_angles_set;
 // Calibration values
 //////////////////////////////
 int s1 = 1500;
-int s2 = 1500;
-int s3 = 1500;
-int s4 = 1500;
+int s2 = 1400;
+int s3 = 1675;
+int s4 = 1450;
  
 int s_inc = 400;
 int s1_max, s2_max, s3_max, s4_max;
@@ -322,8 +322,8 @@ void loop(){
     angle_roll = angle_roll * 0.9996 + angle_roll_acc * 0.0004;               //Correct the drift of the gyro roll angle with the accelerometer roll angle.
   }
 
-  pitch_level_adjust = angle_pitch * 18;                                    //Calculate the pitch angle correction
-  roll_level_adjust = angle_roll * 18;                                      //Calculate the roll angle correction <---- adjust? 
+  pitch_level_adjust = angle_pitch * 25;                                    //Calculate the pitch angle correction
+  roll_level_adjust = angle_roll * 25;                                      //Calculate the roll angle correction <---- adjust? 
 
   if(!auto_level){                                                          //If the quadcopter is not in auto-level mode
     pitch_level_adjust = 0;                                                 //Set the pitch angle correction to zero.
@@ -425,10 +425,10 @@ void loop(){
     servo_3 = map(esc_3, 1000, 2000, s3, s3_max);
     servo_4 = map(esc_4, 1000, 2000, s4, s4_max); 
 
-    esc_1 = map(esc_1, 1000, 2000, 1300, 1500);
-    esc_2 = map(esc_2, 1000, 2000, 1300, 1500);
-    esc_3 = map(esc_3, 1000, 2000, 1300, 1500);
-    esc_4 = map(esc_4, 1000, 2000, 1300, 1500);
+    esc_1 = map(esc_1, 1000, 2000, 1300, 1550);
+    esc_2 = map(esc_2, 1000, 2000, 1300, 1550);
+    esc_3 = map(esc_3, 1000, 2000, 1300, 1550);
+    esc_4 = map(esc_4, 1000, 2000, 1300, 1550);
     
     //send servo val 
     servo1.writeMicroseconds(servo_1);

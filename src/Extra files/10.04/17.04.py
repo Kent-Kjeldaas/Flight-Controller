@@ -18,41 +18,40 @@ logging.basicConfig(file='test.log', level=logging.DEBUG, format='%(asctime)s:%(
 #######################################################################################################################################
 ##CONTROL SYSTEM
 #######################################################################################################################################
-kp_X = 0.2          # Limit desired velocity
-kp_Y = 0.2          # Limit desired velocity
-kp_Z = 0.06         # Limit desired velocity
-kp2_X = 0.3         # Tune roll
-kp2_Y = 0.3         # Tune pitch
-desiredX = 0.0      # Define desired X-position
-desiredY = 0.0      # Define desired Y-position
-desiredZ = 750      # Define desired Y-position
-pitch = 0.0         # Set desired pitch angle
-minPitch = 1250     # Define minimum pitch radio frequency value
-maxPitch = 1750     # Define maximum pitch radio frequency value
-roll = 0.0          # Set desired roll angle
-minRoll = 1250      # Define minimum roll radio frequency value
-maxRoll = 1750      # Define maximum roll radio frequency value
-thrust = 1390       # Approx thrust needed for lift
-maxThrust = 1550    # Max thrust allowed
-minThrust = 1300    # Min thrust allowed
-
-#SIZE OF ROOM, 5x3x2
-LimZ_max = 2000     # 200 cm
-LimZ_min = 350      #  35 cm
-LimX_max = 1690     # 169 cm
-LimX_min = -1690    #-169 cm
-LimY_max = 2500     # 250 cm 
-LimY_min = -2795    #-250 cm
+kp_X = 0.2 #Limit desired velocity
+kp_Y = 0.2 #Limit desired velocity
+kp_Z = 0.06 #Limit desired velocity
+kp2_X = 0.3 #Tune roll
+kp2_Y = 0.3 #Tune pitch
+desiredX = 0.0
+desiredY = 0.0
+desiredZ = 750
+pitch = 0.0
+minPitch = -5
+maxPitch = 5
+roll = 0.0
+minRoll = -5
+maxRoll = 5
+thrust = 1390
+maxThrust = 1590
+minThrust = 1190
+#size of room, 5x3x2
+LimZ_max = 2000 #200cm
+LimZ_min = 350 #35cm
+LimX_max = 1690
+LimX_min = -1690
+LimY_max = 2500 
+LimY_min = -2795
 
 #######################################################################################################################################
 ##VARIABLES
 #######################################################################################################################################
-lostContact = 0     # To keep count of 
-mass = 1.856        # Should be implemented
-gravity = 9.81      # Should be implemented
-active = False      # To check if quadcopter is ready
-start = False       # To check if quadcopter is ready
-star = '*'          # Bluetooth, end symbol
+lostContact = 0
+mass = 1.856
+gravity = 9.81
+active = False
+start = False
+star = '*'
 bd_address = "20:15:08:13:78:88"
 port = 1
 sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
@@ -60,12 +59,12 @@ sock.connect((bd_address, port))
 info ="init"
 
 #Float position and rotation
-currentX = .0       # Define value
-currentY = .0       # Define value
-currentZ = .0       # Define value
-angularX = .0       # Define value
-angularY = .0       # Define value
-angularZ = .0       # Define value
+currentX = .0
+currentY = .0
+currentZ = .0
+angularX = .0
+angularY = .0
+angularZ = .0
 
 #######################################################################################################################################
 ##UPDATING QUALISYS INFORMATION
@@ -103,7 +102,7 @@ def Compute():
     global angularY
     global angularZ
     global lostContact
-    global LimZ_max 
+    global LimZ_max #might not need to be global?
     global LimZ_min
     global LimX_max
     global LimX_min
@@ -113,11 +112,11 @@ def Compute():
     lastY = currentY
     lastZ = currentZ
 
-    #sufficent for now, should be changed in a later version
+    #sufficent for now, need to change later..
     desiredX = currentX
     desiredY = currentY
 
-    if(not math.isnan(currentX) and not math.isnan(currentY) and not math.isnan(currentZ)): #check if we get values from qualisys
+    if(not math.isnan(currentX) and not math.isnan(currentY) and not math.isnan(currentZ)): # if value is in scope (might need to drop isnan because of unknown bug)
         logging.debug("X-Y-Z CHECK")
         active = True
         #ready for flight
@@ -203,7 +202,7 @@ def Compute():
             else:
                 lostContact = 0
                 # Stop if time is greater than thirty seconds (Not really needed? Should be done on Quad?)
-                if (timer > time.time()+15):
+                if (timer > time.time()+30):
                     # Landing Function ??
                     thrust = 1000
                     yaw = 1994

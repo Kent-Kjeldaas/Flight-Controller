@@ -1,0 +1,48 @@
+'''
+###MAIN OFF BOARD###
+Initial:
+Open GUI <- if time?
+User plots route
+User start signal -> quad
+Quad: Checks inital conditions
+Check connection with qualisys
+Check if not error on Quad or Qual (requires two-way communication)
+else display error msg
+ 
+If READY:
+Start logging data
+And run loop
+ 
+Loop:
+Receieve data
+Check mode
+Computation
+Send mode
+'''
+ 
+'''
+###MAIN ON BOARD###
+Setup:
+Wait for signal from OFF BOARD
+Checks inital conditions:
+   Initialise motor
+   Initalise leds
+   Initalise IMU?
+Check IMU data
+Arm motor
+Test each of them to see if we get response
+Check if not error,
+else display error msg
+ 
+If READY:
+Loop:
+When possible:
+Receive data from Qual
+ 
+Each 20ms:
+Setpoint for roll, pitch and yaw
+Receive data from IMU
+PID Compute
+Update motor output
+'''
+ 

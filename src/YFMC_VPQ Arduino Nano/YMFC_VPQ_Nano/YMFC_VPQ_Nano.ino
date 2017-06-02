@@ -49,18 +49,18 @@ float pid_i_mem_yaw, pid_yaw_setpoint, gyro_yaw_input, pid_output_yaw, pid_last_
 /////////////////////////////
 // Legger inn Calibration values:
 //////////////////////////////
-int s1 = 1400;
-int s2 = 1575;
-int s3 = 1560;
-int s4 = 1400;
+int s1 = 1450;
+int s2 = 1550;
+int s3 = 1500;
+int s4 = 1550;
 
 double stick_sensitiviy_pitch = 60;
 double stick_sensitiviy_roll = 60;
 double stick_sensitiviy_yaw = 60;
- 
-int s_inc = 160;
-int s1_max, s2_max, s3_max, s4_max;
- 
+
+int s_inc = 270;
+
+int s1_max, s2_max, s3_max, s4_max, s1_min, s2_min, s3_min, s4_min;
 unsigned long time_1, time_2;
 char data_in;
 bool cal = false;
@@ -188,6 +188,11 @@ void setup() {
     s2_max = s2 + s_inc;
     s3_max = s3 - s_inc;
     s4_max = s4 + s_inc;
+
+    s1_min = s1 + s_inc;
+    s2_min = s2 - s_inc;
+    s3_min = s3 + s_inc;
+    s4_min = s4 - s_inc;
   }
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -289,10 +294,10 @@ void loop() {
   if (start == 2) {                                                         //The motors are started.
     if (throttle > 1800) throttle = 1800;                                   //We need some room to keep full control at full throttle.
  
-    esc_1 = throttle; //(throttle - pid_output_pitch + pid_output_roll - pid_output_yaw)*1.044; //Calculate the pulse for esc 1 (front-right - CCW)
-    esc_2 = throttle; //(throttle + pid_output_pitch + pid_output_roll + pid_output_yaw)*1.046; //Calculate the pulse for esc 2 (rear-right - CW)
-    esc_3 = throttle; //(throttle + pid_output_pitch - pid_output_roll - pid_output_yaw)*0.986; //Calculate the pulse for esc 3 (rear-left - CCW)
-    esc_4 = throttle; //(throttle - pid_output_pitch - pid_output_roll + pid_output_yaw)*1.022; //Calculate the pulse for esc 4 (front-left - CW)
+    esc_1 = (throttle - pid_output_pitch + pid_output_roll - pid_output_yaw)*1.044; //Calculate the pulse for esc 1 (front-right - CCW)
+    esc_2 = (throttle + pid_output_pitch + pid_output_roll + pid_output_yaw)*1.046; //Calculate the pulse for esc 2 (rear-right - CW)
+    esc_3 = (throttle + pid_output_pitch - pid_output_roll - pid_output_yaw)*0.986; //Calculate the pulse for esc 3 (rear-left - CCW)
+    esc_4 = (throttle - pid_output_pitch - pid_output_roll + pid_output_yaw)*1.022; //Calculate the pulse for esc 4 (front-left - CW)
  
     /*if (battery_voltage < 1240 && battery_voltage > 800) {                  //Is the battery connected?
       esc_1 += esc_1 * ((1240 - battery_voltage) / (float)3500);            //Compensate the esc-1 pulse for voltage drop.
@@ -312,15 +317,15 @@ void loop() {
     if (esc_4 > 2000)esc_4 = 2000;                                          //Limit the esc-4 pulse to 2000us.
 
     if(variable_pitch){
-      servo_1 = map(esc_1, 1200, 2000, s1, s1_max); 
-      servo_2 = map(esc_2, 1200, 2000, s2, s2_max);
-      servo_3 = map(esc_3, 1200, 2000, s3, s3_max);
-      servo_4 = map(esc_4, 1200, 2000, s4, s4_max); 
+      servo_1 = map(esc_1, 1200, 2000, s1_min, s1_max); 
+      servo_2 = map(esc_2, 1200, 2000, s2_min, s2_max);
+      servo_3 = map(esc_3, 1200, 2000, s3_min, s3_max);
+      servo_4 = map(esc_4, 1200, 2000, s4_min, s4_max); 
       
-      esc_1 = map(esc_1, 1200, 2000, 1750, 2000);
-      esc_2 = map(esc_2, 1200, 2000, 1750, 2000);
-      esc_3 = map(esc_3, 1200, 2000, 1750, 2000);
-      esc_4 = map(esc_4, 1200, 2000, 1750, 2000);
+      esc_1 = map(esc_1, 1200, 2000, 0, 0);
+      esc_2 = map(esc_2, 1200, 2000, 0, 0);
+      esc_3 = map(esc_3, 1200, 2000, 0, 0);
+      esc_4 = map(esc_4, 1200, 2000, 0, 0);
       
       //send servo val 
       servo1.writeMicroseconds(servo_1);
@@ -578,7 +583,7 @@ int convert_receiver_channel(byte function) {
     if (reverse == 1)return 1500 + difference;                                 //If the channel is reversed
     else return 1500 - difference;                                             //If the channel is not reversed
   }
-  else if (actual > center) {                                                                      //The actual receiver value is higher than the center value
+  else if (actual > center) {                                                  //The actual receiver value is higher than the center value
     if (actual > high)actual = high;                                           //Limit the lowest value to the value that was detected during setup
     difference = ((long)(actual - center) * (long)500) / (high - center);      //Calculate and scale the actual value to a 1000 - 2000us value
     if (reverse == 1)return 1500 - difference;                                 //If the channel is reversed
@@ -681,7 +686,6 @@ void calibrate_servos () {
      through calibration for all of the four motors.
   */
   Serial.println("Enter '*' to calibrate");
-  if (!cal) {
     while (time_1 + 7000 > time_2) {
       time_2 = millis();
       if (Serial.available()) {
@@ -691,7 +695,6 @@ void calibrate_servos () {
         }
       }
     }
-  }
   if (cal) {
     Serial.println("Velkommen til kalllllibrering");
     delay(2000);
